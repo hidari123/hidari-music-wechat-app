@@ -1,0 +1,61 @@
+/**
+ * 格式化数据
+ * wxs => 格式化 wxml 中的数据 不支持 es6
+ * 语法参考 https://developers.weixin.qq.com/miniprogram/dev/reference/wxs/
+ */
+
+/**
+ * 格式化播放量
+ * @param count 播放量
+ */
+function formatCount(count) {
+  var counter = parseInt(count)
+  if (counter > 100000000) {
+    /**
+     * toFixed() 方法可把 Number 四舍五入为指定小数位数的数字。()中是小数位数
+     * 其四舍五入的规则与数学中的规则不同，使用的是银行家舍入规则，
+     * 银行家舍入：实质是一种四舍六入五取偶（又称四舍六入五留双）法。具体规则如下：
+     * 简单来说就是：四舍六入五考虑，五后非零就进一，五后为零看奇偶，五前为偶应舍去，五前为奇要进一。
+     * 其规则与数学中处理方式不同，可以自定义去使用Math.round方法进行自定义式 的实现指定保留多少位数据进行处理。
+     * round() 方法可把一个数字舍入为最接近的整数。
+     */
+    return (counter / 100000000).toFixed(1) + "亿"
+  } else if (counter > 10000) {
+    return (counter / 10000).toFixed(1) + '万'
+  } else {
+    return counter + ''
+  }
+}
+
+/**
+ * 长度不够时左边补 0
+ * @param time 时间
+ */
+function padLeftZero(time) {
+  time = time.toString()
+  // 字符串 time 前面补 00, 从第一位开始, slice去掉字符串 time 的长度 length
+  // time = 12 => "0012" => time.length => 2 => 截掉2位, 剩余 "12"
+  /**
+   * es6 新增语法
+   * (1) 在字符串前面插：String.prototype.padStart( 增加后的字符串长度, '用来填充的字符串' )
+   * (2) 在字符串后面插：String.prototype.padEnd( 增加后的字符串长度, '用来填充的字符串' )
+   */
+  return ("00" + time).slice(time.length)
+}
+
+/**
+ * 格式化歌曲时长
+ * @param duration 歌曲时长(毫秒)
+ */
+function formatDuration(duration) {
+  duration = duration / 1000 // 转化为秒
+  var minute = Math.floor(duration / 60) // 向下取整 => 分钟
+  var second = duration % 60 // 取余 => 秒
+  return padLeftZero(minute) + ':' + padLeftZero(second)
+}
+
+// commonjs导出方式
+module.exports = {
+  formatCount: formatCount,
+  formatDuration: formatDuration
+}

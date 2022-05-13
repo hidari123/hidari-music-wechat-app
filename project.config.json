@@ -25,7 +25,7 @@
     "minifyWXSS": true,
     "useStaticServer": true,
     "showES6CompileOption": false,
-    "checkInvalidKey": true,
+    "checkInvalidKey": false,
     "babelSetting": {
       "ignore": [],
       "disablePlugins": [],

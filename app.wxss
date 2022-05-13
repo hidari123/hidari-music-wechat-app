@@ -1,1 +1,2 @@
 /**app.wxss**/
+@import "components/video-item-v1/index.wxss"

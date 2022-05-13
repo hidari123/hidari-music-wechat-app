@@ -1,18 +1,31 @@
 // pages/home-video/index.js
+
+import {
+  getTopMV
+} from '../../service/api_video'
 Page({
 
   /**
    * 页面的初始数据
    */
   data: {
-
+    // 视频数据列表
+    topMVs: []
   },
 
   /**
-   * 生命周期函数--监听页面加载
+   * 生命周期函数--监听页面加载 (created)
    */
-  onLoad(options) {
-
+  async onLoad(options) {
+    /**
+     * 请求视频数据api
+     */
+    const {
+      data
+    } = await getTopMV(0)
+    this.setData({
+      topMVs: data
+    })
   },
 
   /**
