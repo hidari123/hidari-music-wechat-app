@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@vant/weapp": "^1.10.3",
     "doctoc": "^2.2.0"
   }
 }

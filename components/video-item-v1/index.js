@@ -10,7 +10,8 @@ Component({
     // 接收视频数据列表
     item: {
       type: Object,
-      default: () => {}
+      // 小程序中默认值 => value
+      value: {}
     }
   },
 

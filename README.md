@@ -10,6 +10,9 @@
       - [封装请求方法](#%E5%B0%81%E8%A3%85%E8%AF%B7%E6%B1%82%E6%96%B9%E6%B3%95)
       - [实现](#%E5%AE%9E%E7%8E%B0)
     - [点击 item 实现跳转到详情页面](#%E7%82%B9%E5%87%BB-item-%E5%AE%9E%E7%8E%B0%E8%B7%B3%E8%BD%AC%E5%88%B0%E8%AF%A6%E6%83%85%E9%A1%B5%E9%9D%A2)
+  - [首页](#%E9%A6%96%E9%A1%B5)
+    - [search 搜索框](#search-%E6%90%9C%E7%B4%A2%E6%A1%86)
+    - [轮播图](#%E8%BD%AE%E6%92%AD%E5%9B%BE)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -623,3 +626,291 @@ page {
     })
   },
 ```
+
+## 首页
+
+### search 搜索框
+1. 导入 vant 组件库
+```shell
+npm install @vant/weapp
+```
+2. 使用：`工具 => 构建 npm`
+
+3. 代码实现
+```json
+{
+  "usingComponents": {
+    "van-search": "@vant/weapp/search/index"
+  }
+}
+```
+```html
+<!-- 搜索框 -->
+<van-search background="#fafafa" shape="round" placeholder="搜索您喜欢的歌曲" bind:click-input="handleSearchClick"></van-search>
+```
+```css
+/* 搜索框样式 */
+.van-search__content {
+  background-color: #fff;
+}
+
+.van-search {
+  padding: 10px 0 !important;
+}
+```
+
+### 轮播图
+```html
+<!-- 轮播图 -->
+<swiper class="swiper" style="height: {{swiperHeight}}px;" indicator-dots autoplay circular>
+  <block wx:for="{{banners}}" wx:key="bannerId">
+    <swiper-item class="swiper-item">
+      <!-- bindload => image 中监听到图片加载完毕 -->
+      <image bindload="handleSwiperImageLoaded" class="swiper-image" src="{{item.pic}}" mode="widthFix"></image>
+    </swiper-item>
+  </block>
+</swiper>
+```
+```css
+/* pages/home-music/index.wxss */
+page {
+  padding: 0 20rpx;
+}
+
+/* 搜索框样式 */
+.van-search__content {
+  background-color: #fff;
+}
+
+.van-search {
+  padding: 10px 0 !important;
+}
+
+/* 轮播图样式 */
+.swiper {
+  border-radius: 10rpx;
+  /* 超出部分隐藏 */
+  overflow: hidden;
+  /* 处理一些机型适配左上角不是圆角的情况 */
+  transform: translateY(0);
+}
+
+.swiper-item {
+  /* 去掉图片底部默认3px */
+  display: flex;
+}
+
+.swiper-item .swiper-image {
+  width: 100%;
+}
+```
+
+- 需求处理
+1. 问题：`swipper` 固定高度`150px`，在不同机型下显示不一致
+  - 思路：把`swipper`高度设置为图片在视图下的高度
+  - 代码实现：
+  `utils\query-rect.js`
+  ```js
+  /**
+   * 查询显示区域矩形高度
+  */
+  const queryRect = (selector) => {
+    // 获取结果 用 promise 返回 resolve()
+    return new Promise((resolve) => {
+      // 获取组件的高度
+      const query = wx.createSelectorQuery()
+      // 获取选择的 .swiper-image 组件矩形显示区域
+      query.select(selector).boundingClientRect()
+      // 滚动距离查询
+      // query.selectViewport().scrollOffset()
+      // 执行请求 返回 resolve(res)
+      // 相当于 => 
+      // query.exec((res) => {
+      //   resolve(res)
+      // })
+      query.exec(resolve)
+    })
+  }
+
+  export default queryRect
+  ```
+  - 节流 `utils\throttle.js`
+  ```js
+  /**
+    * 节流：每隔一段时间请求一次
+    * @param {*} fn 需要节流处理的函数
+    * @param {*} interval 延时时间
+    * @param {*} options leading 代表首次是否执行, trailing 代表结束后是否再执行一次
+    */
+  const throttle = (fn, interval = 1000, options = {
+    leading: true,
+    trailing: false
+  }) => {
+    // 1. 记录上次开始时间
+    const {
+      leading,
+      trailing,
+      resultCallback
+    } = options
+    // 初始化上次开始时间
+    let lastTime = 0
+    // 初始化延时器
+    let timer = null
+
+    // 2.事件触发时, 真正执行的函数
+    const _throttle = function (...args) {
+      // 方便处理回调，返回promise
+      return new Promise((resolve, reject) => {
+        // 2.1.获取当前事件触发时的时间
+        const nowTime = new Date().getTime()
+        // 如果第一次执行并且在开始时不先执行一次 把上次执行的时间设为当前事件触发时的时间
+        if (!lastTime && !leading) lastTime = nowTime
+
+        // 2.2.使用当前触发的时间和之前的时间间隔以及上一次开始的时间, 计算出还剩余多长事件需要去触发函数
+        const remainTime = interval - (nowTime - lastTime)
+        // 如果时间到了 需要触发函数
+        if (remainTime <= 0) {
+          // 如果有上一个延时器 清除
+          if (timer) {
+            clearTimeout(timer)
+            timer = null
+          }
+
+          // 2.3.真正触发函数
+          const result = fn.apply(this, args)
+          // 如果有回调函数 执行回调函数
+          if (resultCallback) resultCallback(result)
+          resolve(result)
+          // 2.4.保留上次触发的时间
+          lastTime = nowTime
+          return
+        }
+
+        // 如果结束后需要执行一次 并且没有延时器
+        if (trailing && !timer) {
+          timer = setTimeout(() => {
+            timer = null
+            // 如果需要刚开始执行一次 => lastTime = 0, 否则为当前时间
+            lastTime = !leading ? 0 : new Date().getTime()
+            const result = fn.apply(this, args)
+            if (resultCallback) resultCallback(result)
+            resolve(result)
+          }, remainTime)
+        }
+      })
+    }
+
+    // 取消节流函数 重置数据
+    _throttle.cancel = function () {
+      if (timer) clearTimeout(timer)
+      timer = null
+      lastTime = 0
+    }
+
+    // 返回函数
+    return _throttle
+  }
+
+  export default throttle
+  ```
+  - 监听到图片加载完毕后获取高度
+  ```js
+  // pages/home-music/index.js
+
+  import {
+    getBanners
+  } from '../../service/api_music'
+  import queryRect from '../../utils/query-rect'
+  import throttle from '../../utils/throttle'
+
+  // 生成节流函数
+  const throttleQueryRect = throttle(queryRect)
+  Page({
+
+    /**
+    * 页面的初始数据
+    */
+    data: {
+      // 轮播图
+      banners: [],
+      // swiper轮播图高度(图片显示区域高度)
+      swiperHeight: 0
+    },
+
+    /**
+    * 生命周期函数--监听页面加载
+    */
+    onLoad(options) {
+      // 获取页面数据
+      this.getPageData()
+    },
+
+    /**
+    * 事件处理 - 网络请求
+    */
+    getPageData() {
+      getBanners().then(res => {
+        /**
+        * setData 是同步的还是异步的
+        * setData 在设置 data 数据上 => 同步
+        * 通过最新的数据对 wxml 进行渲染 => 异步
+        * react 中是异步的
+        */
+        this.setData({
+          banners: res.banners
+        })
+        // 可以直接拿到数据
+        // console.log(this.data.banners)
+      })
+    },
+
+    /**
+    * 事件处理 - 点击搜索框
+    */
+    handleSearchClick() {
+      // 跳转页面
+      wx.navigateTo({
+        url: '/pages/detail-search/index',
+      })
+    },
+
+    /**
+    * 事件处理 - 获取图片高度
+    */
+    handleSwiperImageLoaded() {
+      // 获取 image 组件的高度
+      throttleQueryRect('.swiper-image').then(res => {
+        const rect = res[0]
+        // 此时1s内只会执行一次
+        this.setData({
+          swiperHeight: rect.height
+        })
+      })
+    }
+  })
+  ```
+  ```html
+  <!-- 轮播图 -->
+  <swiper class="swiper" style="height: {{swiperHeight}}px;" indicator-dots autoplay circular>
+    <block wx:for="{{banners}}" wx:key="bannerId">
+      <swiper-item class="swiper-item">
+        <!-- bindload => image 中监听到图片加载完毕 -->
+        <image bindload="handleSwiperImageLoaded" class="swiper-image" src="{{item.pic}}" mode="widthFix"></image>
+      </swiper-item>
+    </block>
+  </swiper>
+  ```
+
+2. 给轮播图图片设置圆角和`padding`
+  - 思路：给页面整体设置`padding`，给轮播图设置`border-radios`（如果给图片设置，轮播图切换时会显示圆角）
+  - 实现：
+  ```css
+  /* 轮播图样式 */
+  .swiper {
+    border-radius: 10rpx;
+    /* 超出部分隐藏 */
+    overflow: hidden;
+    /* 处理一些机型适配左上角不是圆角的情况 */
+    transform: translateY(0);
+  }
+  ```

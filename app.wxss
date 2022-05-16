@@ -1,2 +1,7 @@
 /**app.wxss**/
-@import "components/video-item-v1/index.wxss"
+@import "components/video-item-v1/index.wxss";
+
+page {
+  background-color: #fafafa;
+  box-sizing: border-box;
+}

@@ -1,1 +1,31 @@
 /* pages/home-music/index.wxss */
+page {
+  padding: 0 20rpx;
+}
+
+/* 搜索框样式 */
+.van-search__content {
+  background-color: #fff;
+}
+
+.van-search {
+  padding: 10px 0 !important;
+}
+
+/* 轮播图样式 */
+.swiper {
+  border-radius: 10rpx;
+  /* 超出部分隐藏 */
+  overflow: hidden;
+  /* 处理一些机型适配左上角不是圆角的情况 */
+  transform: translateY(0);
+}
+
+.swiper-item {
+  /* 去掉图片底部默认3px */
+  display: flex;
+}
+
+.swiper-item .swiper-image {
+  width: 100%;
+}
