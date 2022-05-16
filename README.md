@@ -914,3 +914,89 @@ page {
     transform: translateY(0);
   }
   ```
+
+### 推荐歌曲组件（插槽）
+`components\area-header`
+```html
+<view class="header">
+  <view class="title">{{title}}</view>
+  <view class="right" wx:if="{{showMore}}" bindtap="handleRightClick">
+    <view class="slot">
+      <slot></slot>
+    </view>
+    <view class="default">
+      <text class="text">{{rightText}}</text>
+      <image class="icon" src="/assets/images/icons/arrow-right.png"></image>
+    </view>
+  </view>
+</view>
+```
+```js
+// components/area-header/index.js
+Component({
+  /**
+   * 组件的属性列表
+   */
+  properties: {
+    // 标题
+    title: {
+      type: String,
+      value: '默认标题'
+    },
+    // 右边元素文本
+    rightText: {
+      type: String,
+      value: '更多'
+    },
+    // 是否显示更多
+    showMore: {
+      type: Boolean,
+      value: true
+    }
+  }
+})
+```
+```css
+/* components/area-header/index.wxss */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 88rpx;
+}
+
+.header .title {
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.header .default {
+  display: none;
+  align-items: center;
+  font-size: 28rpx;
+  color: #777;
+}
+
+/* 伪类：判断slot 为空 */
+/* 在 slot 为空时设置 .right 的 display 为flex */
+.header .slot:empty+.default {
+  display: flex;
+}
+
+.header .default .icon {
+  width: 50rpx;
+  height: 50rpx;
+}
+```
+
+2. 使用
+```html
+<!-- 推荐歌曲 -->
+<view class="recommend-song">
+  <area-header title="推荐歌曲"></area-header>
+</view>
+```
+```html
+  <!-- 相关视频标题 -->
+  <area-header title="猜你喜欢" showMore="{{false}}"></area-header>
+```

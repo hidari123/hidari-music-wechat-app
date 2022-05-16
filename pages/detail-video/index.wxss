@@ -12,8 +12,12 @@ page {
   /* height: 225px; */
 }
 
+.more {
+  padding: 30rpx;
+}
+
 .detail {
-  padding: 30rpx 30rpx 60rpx;
+  padding: 20rpx 0;
 }
 
 .detail .title {
@@ -29,15 +33,8 @@ page {
   color: rgb(90, 89, 89);
 }
 
-.more {
-  padding: 0 30rpx;
-  padding-bottom: 20rpx;
-  font-size: 36rpx;
-  font-weight: 700;
-}
-
 .more-container {
-  padding: 0 30rpx 20rpx;
+  padding: 0 0 20rpx;
   display: flex;
   align-items: center;
   justify-content: space-around;
