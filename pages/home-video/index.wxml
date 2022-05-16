@@ -2,6 +2,7 @@
 
 <view class="video">
   <view class="item" wx:for="{{topMVs}}" wx:key="id">
-    <video-item-v1 item="{{item}}" />
+    <!-- data-xxx 给组件添加上一个属性 可以在监听到事件之后 用 event 拿到 -->
+    <video-item-v1 item="{{item}}" bindtap="handleVideoItemClick" data-item="{{item}}" />
   </view>
 </view>

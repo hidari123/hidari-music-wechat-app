@@ -15,3 +15,33 @@ export const getTopMV = (offset, limit = 10) => {
     limit
   })
 }
+
+/**
+ * 请求MV的播放地址
+ * @param {number} id MV的id 
+ */
+export const getMVURL = (id) => {
+  return hidariRequest.get("/mv/url", {
+    id
+  })
+}
+
+/**
+ * 请求MV的详情
+ * @param {number} mvid MV的id
+ */
+export const getMVDetail = (mvid) => {
+  return hidariRequest.get("/mv/detail", {
+    mvid
+  })
+}
+
+/**
+ * 查询所有相关的视频
+ * @param {number} id MV的id
+ */
+export const getRelatedVideo = (id) => {
+  return hidariRequest.get("/related/allVideo", {
+    id
+  })
+}
