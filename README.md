@@ -1000,3 +1000,40 @@ Component({
   <!-- 相关视频标题 -->
   <area-header title="猜你喜欢" showMore="{{false}}"></area-header>
 ```
+
+- 需求：
+1. 控制是否显示右边元素
+  - 思路：`wx:if`控制右边更多是否显示
+  - 实现：
+  ```js
+    /**
+     * 组件的属性列表
+    */
+    properties: {
+      // 是否显示右边元素
+      showMore: {
+        type: Boolean,
+        value: true
+      }
+    }
+  ```
+  ```html
+    <view class="right" wx:if="{{showMore}}" bindtap="handleRightClick">
+  ```
+2. 在有插槽内容时显示插槽内容，没有插槽内容时显示更多
+  - 思路：写一个插槽 `slot`，默认右边更多为 `display:none`，在插槽内容为 `empty` 时，`display: flex;`
+  - 实现：
+  ```css
+  .header .default {
+    display: none;
+    align-items: center;
+    font-size: 28rpx;
+    color: #777;
+  }
+
+  /* 伪类：判断slot 为空 */
+  /* 在 slot 为空时设置 .right 的 display 为flex */
+  .header .slot:empty+.default {
+    display: flex;
+  }
+  ```
