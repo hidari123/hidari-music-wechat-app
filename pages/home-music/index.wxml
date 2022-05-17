@@ -28,3 +28,13 @@
 
 <!-- 推荐歌单 -->
 <song-menu-area title="推荐歌单" wx:if="{{recommendSongMenu.length > 0}}" songMenu="{{recommendSongMenu}}"></song-menu-area>
+
+<!-- 巅峰榜 -->
+<view class="ranking">
+  <area-header title="巅峰榜" showMore="{{false}}"></area-header>
+  <view class="ranking-list">
+    <block wx:for="{{rankings}}" wx:key="name">
+      <song-ranking-item item="{{item}}" bindtap="handleRankingMoreClick" data-id="{{index}}"></song-ranking-item>
+    </block>
+  </view>
+</view>

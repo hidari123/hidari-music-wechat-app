@@ -18,6 +18,7 @@
       - [封装hidari全局状态管理工具](#%E5%B0%81%E8%A3%85hidari%E5%85%A8%E5%B1%80%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7)
       - [使用全局状态管理工具](#%E4%BD%BF%E7%94%A8%E5%85%A8%E5%B1%80%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7)
     - [封装热门歌单组件](#%E5%B0%81%E8%A3%85%E7%83%AD%E9%97%A8%E6%AD%8C%E5%8D%95%E7%BB%84%E4%BB%B6)
+    - [巅峰榜组件封装](#%E5%B7%85%E5%B3%B0%E6%A6%9C%E7%BB%84%E4%BB%B6%E5%B0%81%E8%A3%85)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1765,4 +1766,330 @@ App({
 `components\song-menu-area\index.wxml`
 ```html
 <scroll-view scroll-x class="scroll-list" style="width: {{screenWidth}}px">
+```
+
+### 巅峰榜组件封装
+
+1. 获取数据
+```js
+import {
+  HidariEventStore
+} from '../hidari-event-store/index'
+import {
+  getRankingData
+} from '../service/api_music'
+
+// 榜单 map 键值对映射
+const rankingMap = {
+  0: "newRankings",
+  1: "hotRankings",
+  2: "originRankings",
+  3: "upRankings"
+}
+const rankingStore = new HidariEventStore({
+  state: {
+    newRankings: {}, // 0 新歌
+    hotRankings: {}, // 1 热门
+    originRankings: {}, // 2 原创
+    upRankings: {}, // 3 飙升
+  },
+  actions: {
+    /**
+     * 获取推荐歌曲
+     * @param {*} ctx 执行上下文
+     */
+    async getRankingDataAction(ctx) {
+      for (let i = 0; i < 4; i++) {
+        const res = await getRankingData(i)
+        // map 映射改进 switch
+        const rankingName = rankingMap[i]
+        ctx[rankingName] = res.playlist
+        // switch (i) {
+        //   case 0:
+        //     ctx.newRankings = res.playlist
+        //     break
+        //   case 1:
+        //     ctx.hotRankings = res.playlist
+        //     break
+        //   case 2:
+        //     ctx.originRankings = res.playlist
+        //     break
+        //   case 3:
+        //     ctx.upRankings = res.playlist
+        //     break
+        // }
+      }
+    }
+  }
+})
+
+export {
+  rankingStore,
+  rankingMap
+}
+```
+
+2. 处理函数
+- 需求：分别按顺序展示三个榜单，每个榜单展示内容格式相同，封装成一个函数
+- 思路：
+  - 为了防止请求回来的数据有快有慢打乱顺序，给每组数据确定位置
+  ```js
+      // 巅峰榜数据 为了防止请求快的数据打乱原本的顺序，直接根据 idx 确定数据位置
+    rankings: {
+      0: {},
+      2: {},
+      3: {}
+    },
+  ```
+  - 为了函数复用，给每个 `onState` 函数的回调函数传参，参数为 `idx`
+  ```js
+  // store 中取出巅峰榜数据
+  rankingStore.onState("newRankings", this.getHandleRankingsData(0));
+  rankingStore.onState("originRankings", this.getHandleRankingsData(2));
+  rankingStore.onState("upRankings", this.getHandleRankingsData(3));
+  ```
+  - 真正的逻辑函数直接返回一个函数，传入的 `idx` 不同，会调用三次函数，但是需要监听的回调是一个函数，此时传参，相当于直接调用函数，此时返回`undefined`，所以此时返回一个函数，相当于回调的是返回的那个函数
+  ```js
+    /**
+   * 事件处理 - 获取榜单数据
+   * 因为有3个 state 都需要返回同一种格式的数据，调用三次，直接返回另外一个函数
+   * 在state变化时会监听三个函数
+   * @param {Number} idx 需要监听的 state 的回调函数参数
+   */
+  getHandleRankingsData(idx) {
+    return (res) => {
+      // 如果没有数据 => 直接返回
+      if (Object.keys(res).length === 0) return
+      // 设置需要的值的对象
+      const name = res.name
+      const songlist = res.tracks.slice(0, 3)
+      const coverImgUrl = res.coverImgUrl
+      const playCount = res.playCount
+      const rankingObj = {
+        name,
+        songlist,
+        coverImgUrl,
+        playCount
+      }
+      // 展开拿到原来的数据 加上新的对象
+      const newRankings = {
+        ...this.data.rankings,
+        // 如果不加 [] => idx，加上[] => 动态展示 idx 对应的数据
+        [idx]: rankingObj
+      };
+      this.setData({
+        rankings: newRankings
+      })
+    }
+  }
+  ```
+
+`pages\home-music\index.js`
+```js
+import {
+  rankingStore
+} from '../../store/index'
+import {
+  getBanners,
+  getSongMenu
+} from '../../service/api_music'
+import queryRect from '../../utils/query-rect'
+import throttle from '../../utils/throttle'
+
+// 生成节流函数
+const throttleQueryRect = throttle(queryRect)
+Page({
+
+  /**
+   * 页面的初始数据
+   */
+  data: {
+    // 轮播图
+    banners: [],
+    // swiper轮播图高度(图片显示区域高度)
+    swiperHeight: 0,
+    // 推荐歌曲
+    recommendSongs: [],
+    // 热门歌单
+    hotSongMenu: [],
+    // 推荐歌单
+    recommendSongMenu: [],
+    // 巅峰榜数据 为了防止请求快的数据打乱原本的顺序，直接根据 idx 确定数据位置
+    rankings: {
+      0: {},
+      2: {},
+      3: {}
+    },
+  },
+
+  /**
+   * 生命周期函数--监听页面加载
+   */
+  onLoad(options) {
+    // 获取页面数据
+    this.getPageData()
+    // 发起共享数据请求
+    rankingStore.dispatch('getRankingDataAction')
+    // 从 store 获取共享的数据
+    this.setupPlayerStoreListener()
+  },
+
+  /**
+   * 事件处理 - 从 store 获取共享的数据
+   */
+  setupPlayerStoreListener() {
+    // store 中取出热门歌单数据
+    rankingStore.onState('hotRankings', (res) => {
+      if (!res.tracks) return
+      this.setData({
+        recommendSongs: res.tracks.slice(0, 6)
+      })
+    })
+    // store 中取出巅峰榜数据
+    rankingStore.onState("newRankings", this.getHandleRankingsData(0));
+    rankingStore.onState("originRankings", this.getHandleRankingsData(2));
+    rankingStore.onState("upRankings", this.getHandleRankingsData(3));
+  },
+
+  /**
+   * 事件处理 - 获取榜单数据
+   * 因为有3个 state 都需要返回同一种格式的数据，调用三次，直接返回另外一个函数
+   * 在state变化时会监听三个函数
+   * @param {Number} idx 需要监听的 state 的回调函数参数
+   */
+  getHandleRankingsData(idx) {
+    return (res) => {
+      // 如果没有数据 => 直接返回
+      if (Object.keys(res).length === 0) return
+      const name = res.name
+      const songlist = res.tracks.slice(0, 3)
+      const coverImgUrl = res.coverImgUrl
+      const playCount = res.playCount
+      const rankingObj = {
+        name,
+        songlist,
+        coverImgUrl,
+        playCount
+      }
+      // 展开拿到原来的数据 加上新的对象
+      const newRankings = {
+        ...this.data.rankings,
+        // 如果不加 [] => idx，加上[] => 动态展示 idx 对应的数据
+        [idx]: rankingObj
+      };
+      this.setData({
+        rankings: newRankings
+      })
+    }
+  }
+})
+```
+
+3. 展示
+`components\song-ranking-item\index.wxml`
+```html
+<wxs src="../../utils/format.wxs" module="format"></wxs>
+<view class="item">
+  <view class="content">
+    <view class="content-title">{{item.name}}</view>
+    <view class="content-list">
+      <block wx:for="{{3}}" wx:for-item="index" wx:key="*this">
+        <view class="content-list-item">
+          <text>{{index+1}}. {{item.songlist[index].name}}</text>
+          <text class="singer"> - {{item.songlist[index].ar[0].name}}</text>
+        </view>
+      </block>
+    </view>
+  </view>
+  <view class="album">
+    <image class="image" mode="aspectFill" src="{{item.coverImgUrl}}"></image>
+    <view class="play-count">{{format.formatCount(item.playCount)}}</view>
+  </view>
+</view>
+```
+`components\song-ranking-item\index.wxss`
+```css
+.item {
+  display: flex;
+  justify-content: space-between;
+  background-color: #eee;
+  border-radius: 12rpx;
+  margin-bottom: 20rpx;
+  overflow: hidden;
+}
+
+.content {
+  padding: 24rpx;
+  display: 1;
+  overflow: hidden;
+}
+
+.content-title {
+  font-size: 34rpx;
+}
+
+.content-list {
+  font-size: 24rpx;
+  width: 100%;
+  margin-top: 6rpx;
+}
+
+.content-list-item {
+  color: #333;
+  margin-top: 6rpx;
+  width: 100%;
+
+  display: inline-block;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  text-emphasis: none;
+}
+
+.content-list-item .singer {
+  color: #999;
+}
+
+.album {
+  position: relative;
+  width: 220rpx;
+  /* display: flex; */
+}
+
+.album .image {
+  width: 220rpx;
+  height: 100%;
+  display: block;
+}
+
+.album .play-count {
+  position: absolute;
+  right: 0;
+  bottom: 0rpx;
+  background: rgba(0, 0, 0, .5);
+  color: #fff;
+  font-size: 22rpx;
+  border-radius: 12rpx;
+  padding: 6rpx 10rpx;
+}
+```
+
+- 需求：`歌曲名称-作者` 只展示一行，超出部分用`...`表示
+- 思路：利用`text-overflow`属性可以使标签内容在确定的长度内显示，剩余部分用“ … ”或者其他字符串代替。
+  - 设置一个宽度，并且设置`overflow`和`white-space`属性，并且`overflow`属性值必须为`hidden`，`white-space`属性必须为`nowrap`。
+  - `white-space`属性设置为`nowrap`表示不折行
+- 实现：
+```css
+.content-list-item {
+  color: #333;
+  margin-top: 6rpx;
+  width: 100%;
+
+  display: inline-block;
+  white-space: nowrap;
+  /* 溢出部分用...省略号代替 */
+  text-overflow: ellipsis;
+  overflow: hidden;
+  text-emphasis: none;
+}
 ```
