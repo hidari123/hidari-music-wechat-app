@@ -1,0 +1,22 @@
+/* components/song-menu-area/index.wxss */
+
+.scroll-list {
+  /* 不允许换行 */
+  white-space: nowrap;
+  /* width: 100vw; */
+  position: relative;
+  left: -20rpx;
+}
+
+.menu-item {
+  display: inline-block;
+  width: 220rpx;
+  margin-left: 20rpx;
+  /* 顶部对齐 防止某些机型不对齐 */
+  vertical-align: top;
+}
+
+/* 给最后一个 item 添加右 padding */
+.menu-item:last-of-type {
+  margin-right: 20rpx;
+}

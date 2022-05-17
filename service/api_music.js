@@ -22,3 +22,17 @@ export const getRankingData = (idx) => {
     idx
   })
 }
+
+/**
+ * 获取歌单（热门歌单、推荐歌单）
+ * @param {String} cat 类型
+ * @param {*} limit 获取数据条数
+ * @param {*} offset 偏移量
+ */
+export const getSongMenu = (cat = "全部", limit = 6, offset = 0) => {
+  return hidariRequest.get('/top/playlist', {
+    cat,
+    limit,
+    offset
+  })
+}

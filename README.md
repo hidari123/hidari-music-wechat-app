@@ -17,6 +17,7 @@
     - [封装 weapp 事件的全局状态管理工具](#%E5%B0%81%E8%A3%85-weapp-%E4%BA%8B%E4%BB%B6%E7%9A%84%E5%85%A8%E5%B1%80%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7)
       - [封装hidari全局状态管理工具](#%E5%B0%81%E8%A3%85hidari%E5%85%A8%E5%B1%80%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7)
       - [使用全局状态管理工具](#%E4%BD%BF%E7%94%A8%E5%85%A8%E5%B1%80%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7)
+    - [封装热门歌单组件](#%E5%B0%81%E8%A3%85%E7%83%AD%E9%97%A8%E6%AD%8C%E5%8D%95%E7%BB%84%E4%BB%B6)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1552,4 +1553,216 @@ Component({
   methods: {
   }
 })
+```
+
+### 封装热门歌单组件
+`components\song-menu-area`
+```html
+<area-header title="{{title}}"></area-header>
+<!-- scroll-x x轴上滚动 -->
+<scroll-view scroll-x class="scroll-list" style="width: {{screenWidth}}px">
+  <block wx:for="{{songMenu}}" wx:key="id">
+    <view class="menu-item">
+      <song-menu-item item="{{item}}" data-item="{{item}}"></song-menu-item>
+    </view>
+  </block>
+</scroll-view>
+```
+```css
+.scroll-list {
+  /* 不允许换行 */
+  white-space: nowrap;
+  /* width: 100vw; */
+  position: relative;
+  left: -20rpx;
+}
+
+.menu-item {
+  display: inline-block;
+  width: 220rpx;
+  margin-left: 20rpx;
+  /* 顶部对齐 防止某些机型不对齐 */
+  vertical-align: top;
+}
+
+/* 给最后一个 item 添加右 padding */
+.menu-item:last-of-type {
+  margin-right: 20rpx;
+}
+```
+`components\song-menu-area\index.json`
+```json
+{
+  "component": true,
+  "usingComponents": {
+    "area-header": "/components/area-header/index",
+    "song-menu-item": "/components/song-menu-item/index"
+  }
+}
+```
+```js
+// components/song-menu-area/index.js
+
+// 拿到app数据
+const app = getApp()
+Component({
+  /**
+   * 组件的属性列表
+   */
+  properties: {
+    // 标题
+    title: {
+      type: String,
+      value: "默认歌单"
+    },
+    // 歌单
+    songMenu: {
+      type: Array,
+      value: []
+    }
+  },
+
+  /**
+   * 组件的初始数据
+   */
+  data: {
+    // 获取屏幕宽度
+    screenWidth: app.globalData.screenWidth
+  }
+})
+```
+`app.js`
+```js
+// app.js
+App({
+  // 定义全局数据
+  globalData: {
+    // 初始化屏幕宽度
+    screenWidth: 0,
+    // 初始化屏幕高度
+    screenHeight: 0
+  },
+  // 程序启动生命周期
+  onLaunch() {
+    // 获取屏幕宽高
+    const info = wx.getSystemInfoSync()
+    this.globalData.screenWidth = info.screenWidth
+    this.globalData.srceenHeight = info.srceenHeight
+    console.log(this.globalData.screenWidth);
+  }
+})
+```
+`components\song-menu-item\index.wxml`
+```html
+<!--components/song-menu-item/index.wxml-->
+<wxs src="../../utils/format.wxs" module="format"></wxs>
+<view class="item">
+  <view class="top">
+    <image class="image" mode="widthFix" src="{{item.coverImgUrl}}"></image>
+    <view class="play-counter">{{format.formatCount(item.playCount)}}</view>
+  </view>
+  <view class="bottom">{{item.name}}</view>
+</view>
+```
+`components\song-menu-item\index.wxss`
+```css
+/* components/song-menu-item/index.wxss */
+
+.item {
+  display: inline-block;
+  width: 100%;
+}
+
+.top {
+  position: relative;
+}
+
+.top .image {
+  width: 100%;
+  border-radius: 12rpx;
+  background-size: cover;
+}
+
+.top .play-counter {
+  position: absolute;
+  right: 0;
+  bottom: 10rpx;
+  color: #fff;
+  font-size: 22rpx;
+  border-radius: 12rpx;
+  padding: 6rpx 10rpx;
+  background: rgba(0, 0, 0, .5);
+}
+
+.item .bottom {
+  width: 100%;
+  font-size: 26rpx;
+
+  /* 显示两行 */
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  display: -moz-box;
+  -moz-line-clamp: 2;
+  -moz-box-orient: vertical;
+  word-wrap: break-word;
+  word-break: break-all;
+  white-space: normal;
+  overflow: hidden;
+}
+```
+`components/song-menu-item/index.js`
+```js
+// components/song-menu-item/index.js
+Component({
+  /**
+   * 组件的属性列表
+   */
+  properties: {
+    item: {
+      type: Object,
+      value: {}
+    }
+  }
+})
+```
+`pages\home-music\index.wxml`
+```html
+<!-- 热门歌单 -->
+<song-menu-area title="热门歌单" wx:if="{{hotSongMenu.length > 0}}" songMenu="{{hotSongMenu}}"></song-menu-area>
+
+<!-- 推荐歌单 -->
+<song-menu-area title="推荐歌单" wx:if="{{recommendSongMenu.length > 0}}" songMenu="{{recommendSongMenu}}"></song-menu-area>
+```
+
+- 需求：app整体加了`padding`，需要取消推荐歌单的`padding`
+- 思路：
+  - 给推荐歌单加`width:100vw`
+  - 获取屏幕宽度`screenWidth`，给推荐歌单加`style`，因为很多地方可能都需要用到屏幕宽度，所以写在
+  `app.js`中
+- 实现
+`app.js`
+```js
+App({
+  // 定义全局数据
+  globalData: {
+    // 初始化屏幕宽度
+    screenWidth: 0,
+    // 初始化屏幕高度
+    screenHeight: 0
+  },
+  // 程序启动生命周期
+  onLaunch() {
+    // 获取屏幕宽高
+    const info = wx.getSystemInfoSync()
+    this.globalData.screenWidth = info.screenWidth
+    this.globalData.srceenHeight = info.srceenHeight
+    console.log(this.globalData.screenWidth);
+  }
+})
+```
+`components\song-menu-area\index.wxml`
+```html
+<scroll-view scroll-x class="scroll-list" style="width: {{screenWidth}}px">
 ```

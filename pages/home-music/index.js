@@ -4,7 +4,8 @@ import {
   rankingStore
 } from '../../store/index'
 import {
-  getBanners
+  getBanners,
+  getSongMenu
 } from '../../service/api_music'
 import queryRect from '../../utils/query-rect'
 import throttle from '../../utils/throttle'
@@ -22,7 +23,11 @@ Page({
     // swiper轮播图高度(图片显示区域高度)
     swiperHeight: 0,
     // 推荐歌曲
-    recommendSongs: []
+    recommendSongs: [],
+    // 热门歌单
+    hotSongMenu: [],
+    // 推荐歌单
+    recommendSongMenu: []
   },
 
   /**
@@ -58,6 +63,24 @@ Page({
       })
       // 可以直接拿到数据
       // console.log(this.data.banners)
+    })
+
+    /**
+     * 热门歌单
+     */
+    getSongMenu().then(res => {
+      this.setData({
+        hotSongMenu: res.playlists
+      })
+    })
+
+    /**
+     * 华语歌单
+     */
+    getSongMenu("华语").then(res => {
+      this.setData({
+        recommendSongMenu: res.playlists
+      })
     })
   },
 
