@@ -13,6 +13,5 @@ App({
     const info = wx.getSystemInfoSync()
     this.globalData.screenWidth = info.screenWidth
     this.globalData.srceenHeight = info.srceenHeight
-    console.log(this.globalData.screenWidth);
   }
 })

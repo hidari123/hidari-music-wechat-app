@@ -1,5 +1,6 @@
 // 统一导出
 export {
-  rankingStore
+  rankingStore,
+  rankingMap
 }
 from './ranking-store'

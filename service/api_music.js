@@ -36,3 +36,13 @@ export const getSongMenu = (cat = "全部", limit = 6, offset = 0) => {
     offset
   })
 }
+
+/**
+ * 获取歌曲信息
+ * @param {Number} id 歌曲 id
+ */
+export const getSongData = (id) => {
+  return hidariRequest.get('/playlist/detail/dynamic', {
+    id
+  })
+}

@@ -1,7 +1,8 @@
 // pages/home-music/index.js
 
 import {
-  rankingStore
+  rankingStore,
+  rankingMap
 } from '../../store/index'
 import {
   getBanners,
@@ -151,9 +152,36 @@ Page({
     throttleQueryRect('.swiper-image').then(res => {
       const rect = res[0]
       // 此时1s内只会执行一次
-      this.setData({
-        swiperHeight: rect.height
-      })
+      if (rect && rect.height) {
+        this.setData({
+          swiperHeight: rect.height
+        })
+      }
+    })
+  },
+
+  /**
+   * 事件处理 - 点击更多跳转更多歌曲页面
+   */
+  handlerMoreClick() {
+    this.navigateToDetailSongPage('hotRankings')
+  },
+  /**
+   * 事件处理 - 点击巅峰榜跳转更多歌曲页面
+   */
+  handleRankingMoreClick(event) {
+    const idx = event.currentTarget.dataset.idx
+    const rankingName = rankingMap[idx]
+    this.navigateToDetailSongPage(rankingName)
+  },
+
+  /**
+   * 跳转到更多歌曲页面函数封装
+   * @param {String} name 点击的组件名
+   */
+  navigateToDetailSongPage(name) {
+    wx.navigateTo({
+      url: `/pages/detail-songs/index?ranking=${name}&&type=rank`,
     })
   }
 })

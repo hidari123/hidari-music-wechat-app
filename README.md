@@ -19,6 +19,10 @@
       - [使用全局状态管理工具](#%E4%BD%BF%E7%94%A8%E5%85%A8%E5%B1%80%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7)
     - [封装热门歌单组件](#%E5%B0%81%E8%A3%85%E7%83%AD%E9%97%A8%E6%AD%8C%E5%8D%95%E7%BB%84%E4%BB%B6)
     - [巅峰榜组件封装](#%E5%B7%85%E5%B3%B0%E6%A6%9C%E7%BB%84%E4%BB%B6%E5%B0%81%E8%A3%85)
+  - [歌曲详情](#%E6%AD%8C%E6%9B%B2%E8%AF%A6%E6%83%85)
+    - [跳转页面](#%E8%B7%B3%E8%BD%AC%E9%A1%B5%E9%9D%A2)
+    - [页面展示](#%E9%A1%B5%E9%9D%A2%E5%B1%95%E7%A4%BA-1)
+    - [歌曲详情头部组件封装](#%E6%AD%8C%E6%9B%B2%E8%AF%A6%E6%83%85%E5%A4%B4%E9%83%A8%E7%BB%84%E4%BB%B6%E5%B0%81%E8%A3%85)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -885,13 +889,15 @@ page {
     */
     handleSwiperImageLoaded() {
       // 获取 image 组件的高度
-      throttleQueryRect('.swiper-image').then(res => {
-        const rect = res[0]
-        // 此时1s内只会执行一次
+    throttleQueryRect('.swiper-image').then(res => {
+      const rect = res[0]
+      // 此时1s内只会执行一次
+      if (rect && rect.height) {
         this.setData({
           swiperHeight: rect.height
         })
-      })
+      }
+    })
     }
   })
   ```
@@ -1772,6 +1778,9 @@ App({
 
 1. 获取数据
 ```js
+/**
+ * 榜单仓库
+ */
 import {
   HidariEventStore
 } from '../hidari-event-store/index'
@@ -1801,7 +1810,6 @@ const rankingStore = new HidariEventStore({
     async getRankingDataAction(ctx) {
       for (let i = 0; i < 4; i++) {
         const res = await getRankingData(i)
-        // map 映射改进 switch
         const rankingName = rankingMap[i]
         ctx[rankingName] = res.playlist
         // switch (i) {
@@ -1827,6 +1835,15 @@ export {
   rankingStore,
   rankingMap
 }
+```
+`store\index.js`
+```js
+// 统一导出
+export {
+  rankingStore,
+  rankingMap
+}
+from './ranking-store'
 ```
 
 2. 处理函数
@@ -2093,3 +2110,476 @@ Page({
   text-emphasis: none;
 }
 ```
+```html
+<!-- 巅峰榜 -->
+<view class="ranking">
+  <area-header title="巅峰榜" showMore="{{false}}"></area-header>
+  <view class="ranking-list">
+    <block wx:for="{{rankings}}" wx:key="name">
+      <song-ranking-item item="{{item}}" bindtap="handleRankingMoreClick" data-id="{{index}}"></song-ranking-item>
+    </block>
+  </view>
+</view>
+```
+
+## 歌曲详情
+### 跳转页面
+```diff
+<!-- 推荐歌曲 -->
+<view class="recommend-song">
++  <area-header title="推荐歌曲" bind:click="handlerMoreClick"></area-header>
+  <view class="song-list">
+    <block wx:for="{{recommendSongs}}" wx:key="id">
+      <song-item-v1 item="{{item}}"></song-item-v1>
+    </block>
+  </view>
+</view>
+
+<!-- 热门歌单 -->
+<song-menu-area title="热门歌单" wx:if="{{hotSongMenu.length > 0}}" songMenu="{{hotSongMenu}}"></song-menu-area>
+
+<!-- 推荐歌单 -->
+<song-menu-area title="推荐歌单" wx:if="{{recommendSongMenu.length > 0}}" songMenu="{{recommendSongMenu}}"></song-menu-area>
+
+<!-- 巅峰榜 -->
+<view class="ranking">
+  <area-header title="巅峰榜" showMore="{{false}}"></area-header>
+  <view class="ranking-list">
+    <!-- 遍历的是对象时，key为index -->
+    <block wx:for="{{rankings}}" wx:key="name">
++      <song-ranking-item item="{{item}}" bindtap="handleRankingMoreClick" data-idx="{{index}}"></song-ranking-item>
+    </block>
+  </view>
+</view>
+```
+`components/song-menu-area/index.wxml`
+```diff
+<!--components/song-menu-area/index.wxml-->
+<area-header title="{{title}}" bind:rightClick="handleMenuMoreClick"></area-header>
+<!-- scroll-x x轴上滚动 -->
+<scroll-view scroll-x class="scroll-list" style="width: {{screenWidth}}px">
+  <block wx:for="{{songMenu}}" wx:key="id">
+    <view class="menu-item">
++      <song-menu-item item="{{item}}" b bindtap="handleMenuItemClick" data-item="{{item}}"></song-menu-item>
+    </view>
+  </block>
+</scroll-view>
+```
+`components/song-menu-area/index.js`
+```js
+  /**
+   * 组件的方法列表
+   */
+  methods: {
+    /**
+     * 事件处理 - 点击歌单 item 跳转到更多歌曲页面
+     */
+    handleMenuItemClick(event) {
+      const item = event.currentTarget.dataset.item
+      wx.navigateTo({
+        url: `/pages/detail-songs/index?id=${item.id}&&type=menu`,
+      })
+    },
+  }
+```
+`components\area-header\index.wxml`
+```diff
+<view class="header">
+  <view class="title">{{title}}</view>
++  <view class="right" wx:if="{{showMore}}" bindtap="handleRightClick">
+    <view class="slot">
+      <slot></slot>
+    </view>
+    <view class="default">
+      <text class="text">{{rightText}}</text>
+      <image class="icon" src="/assets/images/icons/arrow-right.png"></image>
+    </view>
+  </view>
+</view>
+```
+`components\area-header\index.js`
+```js
+  /**
+   * 组件的方法列表
+   */
+  methods: {
+    // 更多的点击事件
+    handleRightClick() {
+      this.triggerEvent('click')
+    }
+  }
+```
+`pages\home-music\index.js`
+```js
+  /**
+   * 事件处理 - 点击更多跳转更多歌曲页面
+   */
+  handlerMoreClick() {
+    this.navigateToDetailSongPage('hotRankings')
+  },
+  /**
+   * 事件处理 - 点击巅峰榜跳转更多歌曲页面
+   */
+  handleRankingMoreClick(event) {
+    const idx = event.currentTarget.dataset.idx
+    const rankingName = rankingMap[idx]
+    this.navigateToDetailSongPage(rankingName)
+  },
+
+  /**
+   * 跳转到更多歌曲页面函数封装
+   * @param {String} name 点击的组件名
+   */
+  navigateToDetailSongPage(name) {
+    wx.navigateTo({
+      url: `/pages/detail-songs/index?ranking=${name}&&type=rank`,
+    })
+  }
+```
+
+- 需求：点击不同的组件显示不同的页面
+  - 思路：跳转 `url` 上添加 `type`，根据 `type` 判断是哪个组件点击跳转来的
+  - 代码实现：
+  ```js
+    /**
+   * 跳转到更多歌曲页面函数封装
+   * @param {String} name 点击的组件名
+   */
+  navigateToDetailSongPage(name) {
+    wx.navigateTo({
+      url: `/pages/detail-songs/index?ranking=${name}&&type=rank`,
+    })
+  }
+  ```
+  ```js
+  /**
+   * 事件处理 - 点击歌单 item 跳转到更多歌曲页面
+   */
+  handleMenuItemClick(event) {
+    const item = event.currentTarget.dataset.item
+    wx.navigateTo({
+      url: `/pages/detail-songs/index?id=${item.id}&&type=menu`,
+    })
+  }
+  ```
+
+### 页面展示
+`pages\detail-songs\index.js`
+```js
+import {
+  rankingStore
+} from '../../store/index'
+import {
+  getSongData
+} from '../../service/api_music'
+// pages/detail-songs/index.js
+Page({
+
+  /**
+   * 页面的初始数据
+   */
+  data: {
+    // 跳转过来的榜单名称
+    rankingName: "",
+    // 歌单信息
+    songsInfo: {},
+    // 跳转过来的数据是哪个类型
+    type: ''
+  },
+
+
+  /**
+   * 生命周期函数--监听页面加载
+   * @param {*} options 路径传递来的参数集合对象
+   */
+  onLoad(options) {
+    this.setData({
+      type: options.type
+    })
+    if (this.data.type === 'menu') {
+      // type 是歌单 => 从歌单跳转
+      const id = options.id
+      // 请求数据
+      getSongData(id).then(res => {
+        this.setData({
+          songsInfo: res.playlist
+        })
+      })
+    } else if (this.data.type === 'rank') {
+      // type 是 榜单 => 从榜单跳转
+      const rankingName = options.ranking
+      this.setData({
+        rankingName
+      })
+      // 获取数据
+      rankingStore.onState(rankingName, this.getRankingDataHandler)
+    }
+  },
+
+  /**
+   * 生命周期函数--监听页面卸载
+   */
+  onUnload() {
+    // 取消监听
+    if (this.data.rankingName) {
+      rankingStore.offState(this.data.rankingName, this.getRankingDataHandler)
+    }
+  },
+  /**
+   * 设置榜单详情信息
+   * @param {Object} res onState 传来的榜单详情信息
+   */
+  getRankingDataHandler(res) {
+    if (res) {
+      this.setData({
+        songsInfo: res
+      })
+    }
+  }
+})
+```
+`pages\detail-songs\index.json`
+```json
+{
+  "usingComponents": {
+    "area-header": "/components/area-header",
+    "song-item-v2": "/components/song-item-v2",
+    "song-detail-header": "/components/song-detail-header/index"
+  }
+}
+```
+`pages\detail-songs\index.wxml`
+```html
+<!--pages/detail-songs/index.wxml-->
+<block wx:if="{{type === 'rank'}}">
+  <area-header title="{{songsInfo.name}}" showMore="{{false}}"></area-header>
+</block>
+<block wx:if="{{type === 'menu'}}">
+  <song-detail-header songsInfo="{{songsInfo}}"></song-detail-header>
+</block>
+
+<view class="song-list">
+  <block wx:for="{{songsInfo.tracks}}" wx:key="id">
+    <!-- index 自增 +1 -->
+    <song-item-v2 index="{{index+1}}" item="{{item}}" bindtap="handleSongItemClick" data-index="{{index}}"></song-item-v2>
+  </block>
+</view>
+```
+`pages\detail-songs\index.wxss`
+```css
+page {
+  padding: 0 20rpx
+}
+```
+
+- 需求：列表前显示标号，自增
+  - 实现：`index="{{index+1}}"`
+
+### 歌曲详情头部组件封装
+`components\song-detail-header\index.js`
+```js
+  /**
+   * 组件的属性列表
+   */
+  properties: {
+    songsInfo: {
+      type: Object,
+      value: {}
+    }
+  },
+```
+`components\song-detail-header\index.wxml`
+```html
+<wxs src="../../utils/format.wxs" module="format"></wxs>
+
+<view class="header">
+  <!-- 背景 -->
+  <image class="bg-image" mode="aspectFill" src="{{songsInfo.coverImgUrl}}"></image>
+  <view class="bg-cover"></view>
+
+  <!-- 内容 -->
+  <view class="content">
+    <image class="image" mode="aspectFill" src="{{songsInfo.coverImgUrl}}"></image>
+    <view class="info">
+      <view class="title">{{songsInfo.name}}</view>
+      <view class="anthor">
+        <image class="avatar" mode="aspectFill" src="{{songsInfo.creator.avatarUrl}}"></image>
+        <text class="nickname">{{songsInfo.creator.nickname}}</text>
+      </view>
+      <view class="desc">简介: {{songsInfo.description}}</view>
+    </view>
+  </view>
+  <view class="operation">
+    <view class="favor item">
+      <image class="icon" mode="widthFix" src="/assets/images/icons/favor_icon.png"></image>
+      <text class="text">{{format.formatCount(songsInfo.playCount || 0)}}</text>
+    </view>
+    <view class="share item">
+      <image class="icon" mode="widthFix" src="/assets/images/icons/share_icon.png"></image>
+      <text class="text">分享</text>
+    </view>
+  </view>
+</view>
+```
+`components/song-detail-header/index.wxss`
+```css
+/* components/song-detail-header/index.wxss */
+
+.header {
+  width: 100vw;
+  position: relative;
+  left: -20rpx;
+  display: flex;
+  flex-direction: column;
+  height: 450rpx;
+  color: #fff;
+}
+
+.header .bg-image {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.header .bg-cover {
+  position: absolute;
+  /* 置于底层 */
+  z-index: -1;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* 图片变暗 */
+  background-color: rgba(0, 0, 0, .5);
+  /* backdrop-filter:透过该层的底部元素模糊化 */
+  /* 防止透过遮罩层内容过暗，配合了saturate(150%)使用，意为使…饱和，类似ps饱和度效果，<100%变暗，>100%变亮 */
+  backdrop-filter: saturate(150%) blur(5px);
+}
+
+.content {
+  display: flex;
+  margin-top: 60rpx;
+  padding: 0 50rpx;
+}
+
+.content .image {
+  width: 220rpx;
+  height: 220rpx;
+  border-radius: 16rpx;
+}
+
+.content .info {
+  position: relative;
+  height: 220rpx;
+  flex: 1;
+  margin-left: 50rpx;
+}
+
+.content .info .title {
+  /* 显示两行 */
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  /* 展示行数为2 */
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  display: -moz-box;
+  -moz-line-clamp: 2;
+  -moz-box-orient: vertical;
+  word-wrap: break-word;
+  word-break: break-all;
+  white-space: normal;
+  overflow: hidden;
+}
+
+.content .anthor {
+  margin-top: 20rpx;
+  display: flex;
+  align-items: center;
+}
+
+.content .anthor .avatar {
+  width: 50rpx;
+  height: 50rpx;
+  border-radius: 25rpx;
+}
+
+.content .anthor .nickname {
+  font-size: 24rpx;
+  margin-left: 18rpx;
+}
+
+.content .info .desc {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  margin-top: 30rpx;
+  font-size: 24rpx;
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.operation {
+  display: flex;
+  justify-content: space-around;
+  padding: 30rpx;
+  margin-top: 30rpx;
+}
+
+.operation .item {
+  display: flex;
+  align-items: center;
+}
+
+.operation .item .icon {
+  width: 48rpx;
+  margin-right: 10rpx;
+}
+
+.operation .item .text {
+  font-size: 28rpx;
+}
+```
+
+- 需求：背景图片显示毛玻璃效果
+  - 实现：
+  ```css
+  .header .bg-cover {
+    position: absolute;
+    /* 置于底层 */
+    z-index: -1;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* 图片变暗 */
+    background-color: rgba(0, 0, 0, .5);
+    /* backdrop-filter:透过该层的底部元素模糊化 */
+    /* 防止透过遮罩层内容过暗，配合了saturate(150%)使用，意为使…饱和，类似ps饱和度效果，<100%变暗，>100%变亮 */
+    backdrop-filter: saturate(150%) blur(5px);
+  }
+  ```
+- 需求：歌曲标题最多展示两行
+  - 实现：
+  ```css
+  .content .info .title {
+    /* 显示两行 */
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    /* 展示行数为2 */
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    display: -moz-box;
+    -moz-line-clamp: 2;
+    -moz-box-orient: vertical;
+    word-wrap: break-word;
+    word-break: break-all;
+    white-space: normal;
+    overflow: hidden;
+  }
+  ```

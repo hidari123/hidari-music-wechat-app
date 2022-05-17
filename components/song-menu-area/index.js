@@ -30,5 +30,15 @@ Component({
   /**
    * 组件的方法列表
    */
-  methods: {}
+  methods: {
+    /**
+     * 事件处理 - 点击歌单 item 跳转到更多歌曲页面
+     */
+    handleMenuItemClick(event) {
+      const item = event.currentTarget.dataset.item
+      wx.navigateTo({
+        url: `/pages/detail-songs/index?id=${item.id}&&type=menu`,
+      })
+    },
+  }
 })

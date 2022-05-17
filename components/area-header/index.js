@@ -31,6 +31,9 @@ Component({
    * 组件的方法列表
    */
   methods: {
-
+    // 更多的点击事件
+    handleRightClick() {
+      this.triggerEvent('click')
+    }
   }
 })
