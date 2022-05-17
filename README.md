@@ -13,6 +13,10 @@
   - [首页](#%E9%A6%96%E9%A1%B5)
     - [search 搜索框](#search-%E6%90%9C%E7%B4%A2%E6%A1%86)
     - [轮播图](#%E8%BD%AE%E6%92%AD%E5%9B%BE)
+    - [推荐歌曲组件（插槽）](#%E6%8E%A8%E8%8D%90%E6%AD%8C%E6%9B%B2%E7%BB%84%E4%BB%B6%E6%8F%92%E6%A7%BD)
+    - [封装 weapp 事件的全局状态管理工具](#%E5%B0%81%E8%A3%85-weapp-%E4%BA%8B%E4%BB%B6%E7%9A%84%E5%85%A8%E5%B1%80%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7)
+      - [封装hidari全局状态管理工具](#%E5%B0%81%E8%A3%85hidari%E5%85%A8%E5%B1%80%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7)
+      - [使用全局状态管理工具](#%E4%BD%BF%E7%94%A8%E5%85%A8%E5%B1%80%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1037,3 +1041,515 @@ Component({
     display: flex;
   }
   ```
+
+### 封装 weapp 事件的全局状态管理工具
+
+#### 封装hidari全局状态管理工具
+`index.js`
+```js
+module.exports = {
+  hidariEventBus: require('./event-bus'),
+  hidariEventStore: require('./event-store')
+}
+```
+
+`utils.js`
+- 两个连续的 " ! "号叠加就会把变量转为它理应代表的布尔值。
+  - 以下为"!!"的规则
+  - `number`类型： 不为`0` 就，`!!num` 等于`true`;
+  - `string`类型： 不为"" (空字符串)，`!!str` 等于`true`;
+  - `!!null` 等于false
+  - !!undefined 等于false
+  - `!!{}` 等于 `true`  //注意：对象就算为空都会被转为`true`
+  - `!!function(){}` 等于 `true`   //注意：这样写`function` 并不会执行`function`，所以就算`function`里面写任何东西都会返回`true`
+- `var o={flag:true};  var test=!!o.flag; // 等效于var test=o.flag||false;  alert(test);`
+  - 由于对`null`与`undefined`用!操作符时都会产生`true`的结果，
+  - 所以用两个感叹号的作用就在于，
+  - 如果明确设置了`o`中`flag`的值（非 `null/undefined/0""`/等值），自然`test`就会取跟`o.flag`一样的值；
+  - 如果没有设置，`test`就会默认为`false`，而不是 `null`或`undefined`。
+```js
+// 判断是否为object
+function isObject(obj) {
+  var type = typeof obj;
+  return type === 'object' && !!obj; // !!obj => true
+}
+
+module.exports = {
+  isObject
+}
+```
+`event-bus`
+```js
+/**
+ * 事件总线 eventBus
+ */
+class HidariEventBus {
+  constructor() {
+    // 挂载到原型上
+    this.eventBus = {}
+  }
+
+  /**
+   * 监听当前实例上的自定义事件。事件可以由 emit 触发。回调函数会接收所有传入事件触发函数的额外参数。
+   * @param {String} eventName 事件名称
+   * @param {Function} eventCallback 事件回调函数
+   * @param {*} thisArg 传参
+   */
+  on(eventName, eventCallback, thisArg) {
+    // 需要传入 string 类型的 eventName
+    if (typeof eventName !== 'string') {
+      throw new TypeError("the event name must be string type")
+    }
+    // 需要传入 function 类型的 eventCallback 回调函数
+    if (typeof eventCallback !== "function") {
+      throw new TypeError("the event callback must be function type")
+    }
+    let handlers = this.eventBus[eventName]
+    // 如果没有事件，事件集合设为空数组
+    if (!handlers) {
+      handlers = []
+      this.eventBus[eventName] = handlers
+    }
+    handlers.push({
+      eventCallback,
+      thisArg
+    })
+    // 返回当前this对象，以便链式调用
+    return this
+  }
+
+  /**
+   * 监听一个自定义事件，但是只触发一次。一旦触发之后，监听器就会被移除。
+   * @param {String} eventName 事件名称
+   * @param {Function} eventCallback 事件回调函数
+   * @param {*} thisArg 传参
+   */
+  once(eventName, eventCallback, thisArg) {
+    // 需要传入 string 类型的 eventName
+    if (typeof eventName !== "string") {
+      throw new TypeError("the event name must be string type")
+    }
+    // 需要传入 function 类型的 eventCallback 回调函数
+    if (typeof eventCallback !== "function") {
+      throw new TypeError("the event callback must be function type")
+    }
+
+    const tempCallback = (...payload) => {
+      this.off(eventName, tempCallback)
+      eventCallback.apply(thisArg, payload)
+    }
+    // 返回当前实例上的自定义事件
+    return this.on(eventName, tempCallback, thisArg)
+  }
+
+  /**
+   * 触发当前实例上的事件。附加参数都会传给监听器回调。
+   * @param {String} eventName 事件名称
+   * @param  {...Array} payload 参数数组
+   */
+  emit(eventName, ...payload) {
+    // 需要传入 string 类型的 eventName
+    if (typeof eventName !== "string") {
+      throw new TypeError("the event name must be string type")
+    }
+
+    // 如果没有事件，默认为空数组
+    const handlers = this.eventBus[eventName] || []
+    handlers.forEach(handler => {
+      // 循环为每个 handler 的回调函数绑定 handler.thisArg，传入 payload 数组参数
+      handler.eventCallback.apply(handler.thisArg, payload)
+    })
+    // 返回当前this对象，以便链式调用
+    return this
+  }
+
+  /**
+   * 移除自定义事件监听器。
+    如果没有提供参数，则移除所有的事件监听器；
+    如果只提供了事件，则移除该事件所有的监听器；
+    如果同时提供了事件与回调，则只移除这个回调的监听器。
+   * @param {String} eventName 事件名称
+   * @param {Function} eventCallback 事件回调函数
+   */
+  off(eventName, eventCallback) {
+    // 需要传入 string 类型的 eventName
+    if (typeof eventName !== "string") {
+      throw new TypeError("the event name must be string type")
+    }
+    // 需要传入 function 类型的 eventCallback 回调函数
+    if (typeof eventCallback !== "function") {
+      throw new TypeError("the event callback must be function type")
+    }
+
+    const handlers = this.eventBus[eventName]
+    // 如果有事件并且有回调函数
+    if (handlers && eventCallback) {
+      // 把事件集合转换为数组
+      const newHandlers = [...handlers]
+      // 找到对应回调函数并且移除
+      for (let i = 0; i < newHandlers.length; i++) {
+        const handler = newHandlers[i]
+        if (handler.eventCallback === eventCallback) {
+          const index = handlers.indexOf(handler)
+          handlers.splice(index, 1)
+        }
+      }
+    }
+
+    // 如果所有事件都被移除
+    if (handlers.length === 0) {
+      // 移除此事件
+      delete this.eventBus[eventName]
+    }
+  }
+}
+// 导出
+module.exports = HidariEventBus
+```
+`event-store`
+```js
+const EventBus = require("./event-bus")
+const {
+  isObject
+} = require('./utils')
+/**
+ * 仓库
+ */
+class HidariEventStore {
+  constructor(options) {
+    // 传入的 option 要是一个对象
+    if (!isObject(options.state)) {
+      throw new TypeError("the state must be object type")
+    }
+    // action 网络请求
+    // 如果有 actions 并且是一个对象
+    if (options.actions && isObject(options.actions)) {
+      // Object.values() 方法返回一个给定对象 (options.actions) 自身的所有可枚举属性值的数组
+      const values = Object.values(options.actions)
+      for (const value of values) {
+        // 每个 action 必须是一个方法
+        if (typeof value !== "function") {
+          throw new TypeError("the value of actions must be a function")
+        }
+      }
+      // 挂载到原型上
+      this.actions = options.actions
+    }
+    // 方法挂载到原型上
+    this.state = options.state
+    this._observe(options.state)
+    this.event = new EventBus()
+    this.eventV2 = new EventBus()
+  }
+
+  /**
+   * 对数据进行双向绑定，通过Object.defineProperty来做数据劫持
+   * @param {*} state 要绑定的Observer对象
+   */
+  _observe(state) {
+    const _this = this
+    // Object.keys 返回一个所有元素为字符串的数组,其元素来自于从给定的object上面可直接枚举的属性。
+    Object.keys(state).forEach(key => {
+      let _value = state[key]
+      /**
+       * Object.defineProperty() 方法会直接在一个对象上定义一个新属性,或者修改一个对象的现有属性,并返回此对象。
+       * 第一个参数为要定义或修改的对象-object
+       * 第二个参数为对象的属性名-string
+       * 第三个参数为配置项
+       */
+      Object.defineProperty(state, key, {
+        // 挂载 get 和 set 方法
+        get: function () {
+          return _value
+        },
+        set: function (newValue) {
+          if (_value === newValue) return
+          _value = newValue
+          // 触发当前实例上的事件，分别传入值和键值对
+          _this.event.emit(key, _value)
+          _this.eventV2.emit(key, {
+            [key]: _value
+          })
+        }
+      })
+    })
+  }
+
+  /**
+   * 数据监听
+   * @param {String} statekey 需要监听是否变化的state名称
+   * @param {Function} stateCallback 回调函数
+   */
+  onState(stateKey, stateCallback) {
+    const keys = Object.keys(this.state)
+    // 事件名必须存在
+    if (keys.indexOf(stateKey) === -1) {
+      throw new Error("the state does not contain your key")
+    }
+    // 监听事件
+    this.event.on(stateKey, stateCallback)
+
+    // 回调需要是一个函数
+    if (typeof stateCallback !== "function") {
+      throw new TypeError("the event callback must be function type")
+    }
+    const value = this.state[stateKey]
+    stateCallback.apply(this.state, [value])
+  }
+
+  // ["name", "age"] callback1
+  // ["name", "height"] callback2
+
+  /**
+   * 监听 state 状态
+   * @param {String} statekeys 需要监听是否变化的state名称集合
+   * @param {Function} stateCallback 回调函数
+   */
+  onStates(statekeys, stateCallback) {
+    // state 中所有名称的元素为字符串的数组
+    const keys = Object.keys(this.state)
+    // 设空对象 value
+    const value = {}
+    for (const theKey of statekeys) {
+      // 需要存在 state 名称
+      if (keys.indexOf(theKey) === -1) {
+        throw new Error("the state does not contain your key")
+      }
+      // 监听当前实例上的自定义事件，传入当前回调函数
+      this.eventV2.on(theKey, stateCallback)
+      value[theKey] = this.state[theKey]
+    }
+    // 把state中的每一项组成的数组作为参数绑定给回调函数
+    stateCallback.apply(this.state, [value])
+  }
+
+  /**
+   * 移除多个state监听器
+   * @param {String} stateKeys 需要移除的 state 集合
+   * @param {Funtion} stateCallback 回调函数
+   */
+  offStates(stateKeys, stateCallback) {
+    const keys = Object.keys(this.state)
+    // 移除每一个 state 监听
+    stateKeys.forEach(theKey => {
+      if (keys.indexOf(theKey) === -1) {
+        throw new Error("the state does not contain your key")
+      }
+      this.eventV2.off(theKey, stateCallback)
+    })
+  }
+
+  /**
+   * 移除state监听器
+   * @param {String} stateKeys 需要移除的 state
+   * @param {Funtion} stateCallback 回调函数
+   */
+  offState(stateKey, stateCallback) {
+    const keys = Object.keys(this.state)
+    // 移除 state 监听
+    if (keys.indexOf(stateKey) === -1) {
+      throw new Error("the state does not contain your key")
+    }
+    this.event.off(stateKey, stateCallback)
+  }
+
+  /**
+   * 修改 state 中的值
+   * @param {String} stateKey 需要被修改的 state 名
+   * @param {Function} stateValue 想要修改成的值
+   */
+  setState(stateKey, stateValue) {
+    this.state[stateKey] = stateValue
+  }
+
+  /**
+   * 异步发送网络请求
+   * @param {String} actionName action名称
+   * @param  {...Array} args 参数数组
+   */
+  dispatch(actionName, ...args) {
+    // 名称需要是 string 类型
+    if (typeof actionName !== "string") {
+      throw new TypeError("the action name must be string type")
+    }
+    // 需要存在 action名称
+    if (Object.keys(this.actions).indexOf(actionName) === -1) {
+      throw new Error("this action name does not exist, please check it")
+    }
+    const actionFn = this.actions[actionName]
+    // 把仓库的 state 和传入的参数绑定到事件上
+    actionFn.apply(this, [this.state, ...args])
+  }
+}
+// 导出
+module.exports = HidariEventStore
+```
+
+#### 使用全局状态管理工具
+
+1. `store`封装
+`store\ranking-store.js`
+```js
+import {
+  HidariEventStore
+} from '../hidari-event-store/index'
+import {
+  getRankingData
+} from '../service/api_music'
+const rankingStore = new HidariEventStore({
+  state: {
+    hotRanking: {}
+  },
+  actions: {
+    /**
+     * 获取推荐歌曲
+     * @param {*} ctx 执行上下文
+     */
+    async getRankingDataAction(ctx) {
+      const res = await getRankingData(1)
+      ctx.hotRanking = res.playlist
+    }
+  }
+})
+
+export {
+  rankingStore
+}
+```
+`store\index.js`
+```js
+// 统一导出
+export {
+  rankingStore
+}
+from './ranking-store'
+```
+
+2. 获取api
+```js
+/**
+ * 获取推荐歌曲数据
+ * @param {Number} idx 推荐歌曲类型 [0, 1, 2, 3]
+ */
+export const getRankingData = (idx) => {
+  return hidariRequest.get('/top/list', {
+    idx
+  })
+}
+```
+
+3. `pages\home-music\index.js`调用
+```js
+// pages/home-music/index.js
+
+import {
+  rankingStore
+} from '../../store/index'
+Page({
+
+  /**
+   * 页面的初始数据
+   */
+  data: {
+    // 推荐歌曲
+    recommendSongs: []
+  },
+
+  /**
+   * 生命周期函数--监听页面加载
+   */
+  onLoad(options) {
+    // 获取页面数据
+    this.getPageData()
+    // 发起共享数据请求
+    rankingStore.dispatch('getRankingDataAction')
+    // 从 store 获取共享的数据
+    rankingStore.onState('hotRanking', (res) => {
+      if (!res.tracks) return
+      this.setData({
+        recommendSongs: res.tracks.slice(0, 6)
+      })
+    })
+  }
+})
+```
+
+4. 页面渲染
+`components/song-item-v1/index.wxml`
+```html
+<!--components/song-item-v1/index.wxml-->
+<view class="item" data-item="{{item}}">
+  <image class="image" src="{{item.al.picUrl}}"></image>
+  <view class="content">
+    <view class="name">{{item.name}}</view>
+    <view class="source">{{item.ar[0].name}} · {{item.al.name}}</view>
+  </view>
+  <view class="arrow">
+    <image class="icon" src="/assets/images/icons/arrow-right.png"></image>
+  </view>
+</view>
+```
+`components/song-item-v1/index.wxss`
+```css
+/* components/song-item-v1/index.wxss */
+
+.item {
+  display: flex;
+  padding: 16rpx 0;
+  align-items: center;
+}
+
+.image {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 16rpx;
+}
+
+.content {
+  margin-left: 16rpx;
+  flex: 1;
+}
+
+.content .name {
+  font-size: 32rpx;
+  color: #555;
+}
+
+.content .source {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.arrow .icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+```
+```js
+Component({
+  /**
+   * 组件的属性列表
+   */
+  properties: {
+    // 歌曲数据项
+    item: {
+      type: Object,
+      value: {}
+    }
+  },
+
+  /**
+   * 组件的初始数据
+   */
+  data: {
+
+  },
+
+  /**
+   * 组件的方法列表
+   */
+  methods: {
+  }
+})
+```

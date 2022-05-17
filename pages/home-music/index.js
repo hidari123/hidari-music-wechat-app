@@ -1,6 +1,9 @@
 // pages/home-music/index.js
 
 import {
+  rankingStore
+} from '../../store/index'
+import {
   getBanners
 } from '../../service/api_music'
 import queryRect from '../../utils/query-rect'
@@ -17,7 +20,9 @@ Page({
     // 轮播图
     banners: [],
     // swiper轮播图高度(图片显示区域高度)
-    swiperHeight: 0
+    swiperHeight: 0,
+    // 推荐歌曲
+    recommendSongs: []
   },
 
   /**
@@ -26,6 +31,15 @@ Page({
   onLoad(options) {
     // 获取页面数据
     this.getPageData()
+    // 发起共享数据请求
+    rankingStore.dispatch('getRankingDataAction')
+    // 从 store 获取共享的数据
+    rankingStore.onState('hotRanking', (res) => {
+      if (!res.tracks) return
+      this.setData({
+        recommendSongs: res.tracks.slice(0, 6)
+      })
+    })
   },
 
   /**
