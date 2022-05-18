@@ -3,15 +3,6 @@ page {
   padding: 0 20rpx;
 }
 
-/* 搜索框样式 */
-.van-search__content {
-  background-color: #fff;
-}
-
-.van-search {
-  padding: 10px 0 !important;
-}
-
 /* 轮播图样式 */
 .swiper {
   border-radius: 10rpx;

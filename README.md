@@ -12,7 +12,7 @@
     - [点击 item 实现跳转到详情页面](#%E7%82%B9%E5%87%BB-item-%E5%AE%9E%E7%8E%B0%E8%B7%B3%E8%BD%AC%E5%88%B0%E8%AF%A6%E6%83%85%E9%A1%B5%E9%9D%A2)
   - [首页](#%E9%A6%96%E9%A1%B5)
     - [search 搜索框](#search-%E6%90%9C%E7%B4%A2%E6%A1%86)
-    - [轮播图](#%E8%BD%AE%E6%92%AD%E5%9B%BE)
+    - [轮播图(节流，图片高度)](#%E8%BD%AE%E6%92%AD%E5%9B%BE%E8%8A%82%E6%B5%81%E5%9B%BE%E7%89%87%E9%AB%98%E5%BA%A6)
     - [推荐歌曲组件（插槽）](#%E6%8E%A8%E8%8D%90%E6%AD%8C%E6%9B%B2%E7%BB%84%E4%BB%B6%E6%8F%92%E6%A7%BD)
     - [封装 weapp 事件的全局状态管理工具](#%E5%B0%81%E8%A3%85-weapp-%E4%BA%8B%E4%BB%B6%E7%9A%84%E5%85%A8%E5%B1%80%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7)
       - [封装hidari全局状态管理工具](#%E5%B0%81%E8%A3%85hidari%E5%85%A8%E5%B1%80%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7)
@@ -23,6 +23,13 @@
     - [跳转页面](#%E8%B7%B3%E8%BD%AC%E9%A1%B5%E9%9D%A2)
     - [页面展示](#%E9%A1%B5%E9%9D%A2%E5%B1%95%E7%A4%BA-1)
     - [歌曲详情头部组件封装](#%E6%AD%8C%E6%9B%B2%E8%AF%A6%E6%83%85%E5%A4%B4%E9%83%A8%E7%BB%84%E4%BB%B6%E5%B0%81%E8%A3%85)
+  - [搜索](#%E6%90%9C%E7%B4%A2)
+    - [热门搜索模块](#%E7%83%AD%E9%97%A8%E6%90%9C%E7%B4%A2%E6%A8%A1%E5%9D%97)
+    - [搜索建议](#%E6%90%9C%E7%B4%A2%E5%BB%BA%E8%AE%AE)
+      - [防抖处理](#%E9%98%B2%E6%8A%96%E5%A4%84%E7%90%86)
+      - [搜索关键字高亮](#%E6%90%9C%E7%B4%A2%E5%85%B3%E9%94%AE%E5%AD%97%E9%AB%98%E4%BA%AE)
+      - [搜索结果](#%E6%90%9C%E7%B4%A2%E7%BB%93%E6%9E%9C)
+  - [播放页](#%E6%92%AD%E6%94%BE%E9%A1%B5)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -669,7 +676,7 @@ npm install @vant/weapp
 }
 ```
 
-### 轮播图
+### 轮播图(节流，图片高度)
 ```html
 <!-- 轮播图 -->
 <swiper class="swiper" style="height: {{swiperHeight}}px;" indicator-dots autoplay circular>
@@ -748,6 +755,7 @@ page {
   ```js
   /**
     * 节流：每隔一段时间请求一次
+    * 获取当前时间和上次开始时间 如果超过设定时间就执行一次
     * @param {*} fn 需要节流处理的函数
     * @param {*} interval 延时时间
     * @param {*} options leading 代表首次是否执行, trailing 代表结束后是否再执行一次
@@ -2583,3 +2591,626 @@ page {
     overflow: hidden;
   }
   ```
+
+## 搜索
+
+### 热门搜索模块
+`pages/detail-search/index.wxml`
+```html
+<!--pages/detail-search/index.wxml-->
+<!-- 搜索框 -->
+<van-search class="search" background="#f7f7f7" shape="round"></van-search>
+
+<!-- 热门搜索 -->
+<view class="hots">
+  <area-header title="热门搜索" showMore="{{false}}"></area-header>
+  <view class="hot-list">
+    <block wx:for="{{hotKeyWords}}" wx:key="first">
+      <view class="tags">{{item.first}}</view>
+    </block>
+  </view>
+</view>
+```
+```js
+  /**
+   * 页面的初始数据
+   */
+  data: {
+    // 热门搜索关键字
+    hotKeyWords: []
+  },
+
+  /**
+   * 生命周期函数--监听页面加载
+   */
+  onLoad(options) {
+    // 获取页面数据
+    this.getSearcData()
+  },
+
+  /**
+   * 网络请求
+   */
+  getSearcData() {
+    getSearchHot().then(res => {
+      this.setData({
+        hotKeyWords: res.result.hots
+      })
+    })
+  }
+```
+```css
+page {
+  padding: 0 20rpx;
+  padding-top: 56px;
+}
+
+/* 搜索框 */
+.search {
+  position: fixed;
+  top: 0;
+  left: 20rpx;
+  right: 20rpx;
+}
+
+/* 热门搜索 */
+.hot-list {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.hot-list .tags {
+  background-color: #fff;
+  font-size: 26rpx;
+  padding: 10rpx 12rpx;
+  border-radius: 16rpx;
+  margin-right: 20rpx;
+  margin-top: 20rpx;
+}
+
+.hot-list .tags:first-of-type {
+  color: #26ce8a;
+}
+```
+```json
+{
+  "usingComponents": {
+    "van-search": "@vant/weapp/search/index",
+    "area-header": "/components/area-header/index"
+  }
+}
+```
+
+### 搜索建议
+```html
+<!-- 搜索建议 -->
+<view class="suggest" wx:else>
+  <view class="title">搜索“{{searchValue}}”</view>
+  <view class="list">
+    <block wx:for="{{suggestSongs}}" wx:key="keyword">
+      <view class="item">
+        <image class="icon" mode="widthFix" src="/assets/images/icons/search_icon.png"></image>
+        <text class="text">{{item.keyword}}</text>
+      </view>
+    </block>
+  </view>
+</view>
+```
+```css
+/* 建议搜索 */
+.suggest {
+  padding: 10rpx;
+}
+
+.suggest .title {
+  font-size: 34rpx;
+  color: #26ce8a;
+  font-weight: 700;
+}
+
+.suggest .item {
+  display: flex;
+  align-items: center;
+  margin-top: 16rpx;
+}
+
+.suggest .item .icon {
+  width: 66rpx;
+  margin-left: -20rpx;
+}
+
+.suggest .item .text {
+  font-size: 28rpx;
+  display: 1;
+
+  /* 显示两行 */
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  display: -moz-box;
+  -moz-line-clamp: 1;
+  -moz-box-orient: vertical;
+  word-wrap: break-word;
+  word-break: break-all;
+  white-space: normal;
+  overflow: hidden;
+}
+```
+
+#### 防抖处理
+`utils\debounce.js`
+```js
+/**
+ * 防抖：只会在最后调用一次
+ * 每次调用函数时会先清除原先的定时器，调用函数时会一直清除定时器并设定下一个定时器，直到最后一次定时器清除后执行延迟操作
+ * @param {*} fn 需要防抖的函数
+ * @param {*} delay 延迟时间
+ * @param {*} immediate 是否立即执行一次
+ * @param {*} resultCallback 回调函数
+ */
+
+export default function debounce(fn, delay = 500, immediate = false, resultCallback) {
+  // 1.定义一个定时器, 保存上一次的定时器
+  let timer = null
+  let isInvoke = false // 是否已经执行一次
+
+  // 2.真正执行的函数
+  const _debounce = function (...args) {
+    return new Promise((resolve, reject) => {
+      // 取消上一次的定时器
+      if (timer) clearTimeout(timer)
+
+      // 判断是否需要立即执行
+      if (immediate && !isInvoke) {
+        const result = fn.apply(this, args)
+        if (resultCallback) resultCallback(result)
+        resolve(result)
+        isInvoke = true
+      } else {
+        // 延迟执行
+        timer = setTimeout(() => {
+          // 外部传入的真正要执行的函数
+          const result = fn.apply(this, args)
+          if (resultCallback) resultCallback(result)
+          resolve(result)
+          isInvoke = false
+          timer = null
+        }, delay)
+      }
+    })
+  }
+
+  // 封装取消功能
+  _debounce.cancel = function () {
+    console.log(timer)
+    if (timer) clearTimeout(timer)
+    timer = null
+    isInvoke = false
+  }
+
+  return _debounce
+}
+```
+`pages\detail-search\index.js`
+```js
+const {
+  getSearchHot,
+  getSearchSuggest
+} = require("../../service/api_search")
+// 引入防抖
+import debounce from '../../utils/debounce'
+
+// 返回经过防抖处理的函数
+const debounceGetSearchSuggest = debounce(getSearchSuggest)
+
+// pages/detail-search/index.js
+Page({
+
+  /**
+   * 页面的初始数据
+   */
+  data: {
+    // 热门搜索关键字
+    hotKeyWords: [],
+    // 搜索建议
+    suggestSongs: [],
+    // 搜索输入值
+    searchValue: ''
+  },
+
+  /**
+   * 生命周期函数--监听页面加载
+   */
+  onLoad(options) {
+    // 获取页面数据
+    this.getSearcData()
+  },
+
+  /**
+   * 网络请求
+   */
+  getSearcData() {
+    getSearchHot().then(res => {
+      this.setData({
+        hotKeyWords: res.result.hots
+      })
+    })
+  },
+
+  /**
+   * 事件处理 - 监听搜索框输入内容
+   */
+  async handleSearchChange(event) {
+    // 获取输入的关键字
+    const searchValue = event.detail.trim()
+    // 保存关键字
+    this.setData({
+      searchValue
+    })
+    console.log(this.data.searchValue);
+    // 判断关键字为字符串
+    if (!this.data.searchValue.length) {
+      // 清空搜索建议
+      this.setData({
+        suggestSongs: []
+      })
+      return
+    }
+    // 根据关键字搜索
+    const res = await debounceGetSearchSuggest(this.data.searchValue)
+    this.setData({
+      suggestSongs: res.result.allMatch
+    })
+  }
+})
+```
+
+#### 搜索关键字高亮
+
+> 思路：利用富文本框，`startsWith`检测是否以`keyword`开头，如果是进行截取，分为两个`node`节点再拼接，否则整体传送`node`节点
+```html
+<!-- 搜索建议 -->
+<view class="suggest" wx:else>
+  <view class="title">搜索“{{searchValue}}”</view>
+  <view class="list">
+    <block wx:for="{{suggestSongsNodes}}" wx:key="keyword">
+      <view class="item">
+        <image class="icon" mode="widthFix" src="/assets/images/icons/search_icon.png"></image>
+        <!-- <text class="text">{{item.keyword}}</text> -->
+        <!-- 富文本 -->
+        <rich-text class="text" nodes="{{item}}"></rich-text>
+      </view>
+    </block>
+  </view>
+</view>
+```
+`utils\string2Nodes.js`
+```js
+/**
+ * 字符串转化为 nodes 高亮显示
+ */
+
+const string2Nodes = (keyword, value) => {
+  const nodes = []
+  /**
+   * startsWith() 方法用于检测字符串是否以指定的前缀开始。
+   * 返回值：如果字符串以指定的前缀开始，则返回 true；否则返回 false。
+   * ps: endWith() 以什么结尾 返回布尔值
+   */
+  // 全部转化为大写匹配
+  if (keyword.toUpperCase().startsWith(value.toUpperCase())) {
+    // 截取需要高亮显示的关键字
+    const key1 = keyword.slice(0, value.length)
+    const node1 = {
+      name: 'span',
+      attrs: {
+        style: "color: #26ce8a"
+      },
+      children: [{
+        type: "text",
+        text: key1
+      }]
+    }
+    nodes.push(node1)
+    // 截取关键字以外的字符
+    const key2 = keyword.slice(value.length)
+    const node2 = {
+      name: 'span',
+      attrs: {
+        style: "color: #000"
+      },
+      children: [{
+        type: "text",
+        text: key2
+      }]
+    }
+    nodes.push(node2)
+  } else {
+    // 没有匹配到
+    const node = {
+      name: 'span',
+      attrs: {
+        style: "color: #000"
+      },
+      children: [{
+        type: "text",
+        text: keyword
+      }]
+    }
+    nodes.push(node)
+  }
+  return nodes
+}
+
+export default string2Nodes
+```
+```js
+const {
+  getSearchHot,
+  getSearchSuggest
+} = require("../../service/api_search")
+// 引入防抖
+import debounce from '../../utils/debounce'
+// 导入高亮显示搜索关键字方法
+import stringToNodes from '../../utils/string2Nodes'
+// 返回经过防抖处理的函数
+const debounceGetSearchSuggest = debounce(getSearchSuggest)
+// pages/detail-search/index.js
+Page({
+
+  /**
+   * 页面的初始数据
+   */
+  data: {
+    // 热门搜索关键字
+    hotKeyWords: [],
+    // 搜索建议
+    suggestSongs: [],
+    // 转化为节点
+    suggestSongsNodes: [],
+    // 搜索输入值
+    searchValue: ''
+  },
+
+  /**
+   * 生命周期函数--监听页面加载
+   */
+  onLoad(options) {
+    // 获取页面数据
+    this.getSearcData()
+  },
+
+  /**
+   * 网络请求
+   */
+  getSearcData() {
+    getSearchHot().then(res => {
+      this.setData({
+        hotKeyWords: res.result.hots
+      })
+    })
+  },
+
+  /**
+   * 事件处理 - 监听搜索框输入内容
+   */
+  async handleSearchChange(event) {
+    // 获取输入的关键字
+    const searchValue = event.detail.trim()
+    // 保存关键字
+    this.setData({
+      searchValue
+    })
+    console.log(this.data.searchValue);
+    // 判断关键字为字符串
+    if (!this.data.searchValue.length) {
+      // 清空搜索建议
+      this.setData({
+        suggestSongs: []
+      })
+      this.setData({
+        suggestSongsNodes: []
+      })
+      return
+    }
+    // 根据关键字搜索
+    const res = await debounceGetSearchSuggest(this.data.searchValue)
+    // 获取建议的关键字歌曲
+    this.setData({
+      suggestSongs: res.result.allMatch
+    })
+    // 转成 node 节点
+    if (this.data.suggestSongs) {
+      const suggestKeywords = this.data.suggestSongs.map(item => item.keyword)
+      const suggestSongsNodes = []
+      for (const keyword of suggestKeywords) {
+        const nodes = stringToNodes(keyword, this.data.searchValue)
+        suggestSongsNodes.push(nodes)
+      }
+      this.setData({
+        suggestSongsNodes
+      })
+    }
+  }
+})
+```
+
+#### 搜索结果
+
+```html
+<!--pages/detail-search/index.wxml-->
+<!-- 搜索框 -->
+<van-search class="search" background="#f7f7f7" bind:search="handleSearchAction" bind:change="handleSearchChange" value="{{searchValue}}" show-action="{{searchValue}}" shape="round" placeholder="搜索 音乐/视频/歌手/歌单/电台"></van-search>
+
+<!-- 热门搜索 -->
+<view class="hots" wx:if="{{!searchValue.length}}">
+  <area-header title="热门搜索" showMore="{{false}}"></area-header>
+  <view class="hot-list">
+    <block wx:for="{{hotKeyWords}}" wx:key="first">
+      <view class="tags" bindtap="handleKeywordClick" data-keyword="{{item.first}}">{{item.first}}</view>
+    </block>
+  </view>
+</view>
+
+<!-- 搜索建议 -->
+<view class="suggest" wx:elif="{{suggestSongs.length && !resultSongs.length}}">
+  <view class="title">搜索“{{searchValue}}”</view>
+  <view class="list">
+    <block wx:for="{{suggestSongs}}" wx:key="keyword">
+      <view class="item" bindtap="handleKeywordClick" data-keyword="{{item.keyword}}">
+        <image class="icon" mode="widthFix" src="/assets/images/icons/search_icon.png"></image>
+        <!-- 富文本 -->
+        <rich-text class="text" nodes="{{suggestSongsNodes[index]}}"></rich-text>
+      </view>
+    </block>
+  </view>
+</view>
+
+<!-- 搜索结果 -->
+<view class="result" wx:elif="{{resultSongs.length}}">
+  <view class="title">最佳匹配</view>
+  <view class="list">
+    <block wx:for="{{resultSongs}}" wx:key="id">
+      <!-- index 自增 -->
+      <song-item-v2 item="{{item}}" index="{{index + 1}}"></song-item-v2>
+    </block>
+  </view>
+</view>
+```
+```js
+const {
+  getSearchHot,
+  getSearchSuggest,
+  getSearchResult
+} = require("../../service/api_search")
+// 引入防抖
+import debounce from '../../utils/debounce'
+// 导入高亮显示搜索关键字方法
+import stringToNodes from '../../utils/string2Nodes'
+// 返回经过防抖处理的函数
+const debounceGetSearchSuggest = debounce(getSearchSuggest)
+// pages/detail-search/index.js
+Page({
+
+  /**
+   * 页面的初始数据
+   */
+  data: {
+    // 热门搜索关键字
+    hotKeyWords: [],
+    // 搜索建议
+    suggestSongs: [],
+    // 转化为节点
+    suggestSongsNodes: [],
+    // 搜索输入值
+    searchValue: '',
+    // 搜索结果
+    resultSongs: []
+  },
+
+  /**
+   * 生命周期函数--监听页面加载
+   */
+  onLoad(options) {
+    // 获取页面数据
+    this.getSearcData()
+  },
+
+  /**
+   * 网络请求
+   */
+  getSearcData() {
+    getSearchHot().then(res => {
+      this.setData({
+        hotKeyWords: res.result.hots
+      })
+    })
+  },
+
+  /**
+   * 事件处理 - 监听搜索框输入内容
+   */
+  async handleSearchChange(event) {
+    // 获取输入的关键字
+    const searchValue = event.detail.trim()
+    // 保存关键字
+    this.setData({
+      searchValue
+    })
+    // 清空搜索结果
+    this.setData({
+      resultSongs: []
+    })
+    console.log(this.data.searchValue);
+    // 判断关键字为字符串
+    if (!this.data.searchValue.length) {
+      // 清空搜索建议
+      this.setData({
+        suggestSongs: []
+      })
+      // 清空 node 节点
+      this.setData({
+        suggestSongsNodes: []
+      })
+      return
+    }
+    // 根据关键字搜索
+    const res = await debounceGetSearchSuggest(this.data.searchValue)
+    // 获取建议的关键字歌曲
+    this.setData({
+      suggestSongs: res.result.allMatch
+    })
+    // 转成 node 节点
+    if (this.data.suggestSongs) {
+      const suggestKeywords = this.data.suggestSongs.map(item => item.keyword)
+      const suggestSongsNodes = []
+      for (const keyword of suggestKeywords) {
+        const nodes = stringToNodes(keyword, this.data.searchValue)
+        suggestSongsNodes.push(nodes)
+      }
+      this.setData({
+        suggestSongsNodes
+      })
+    }
+  },
+
+  /**
+   * 事件处理 - 根据关键字搜索
+   */
+  handleSearchAction() {
+    const searchValue = this.data.searchValue
+    getSearchResult(searchValue).then(res => {
+      this.setData({
+        resultSongs: res.result.songs
+      })
+    })
+  },
+
+  /**
+   * 拿到点击的关键字
+   */
+  handleKeywordClick(event) {
+    // 获取点击的关键字
+    const keyword = event.currentTarget.dataset.keyword
+    // 将关键字设置到 searchValue 中
+    this.setData({
+      searchValue: keyword
+    })
+
+    // 发送网络请求
+    this.handleSearchAction()
+  }
+})
+```
+```json
+{
+  "usingComponents": {
+    "van-search": "@vant/weapp/search/index",
+    "area-header": "/components/area-header/index",
+    "song-item-v2": "/components/song-item-v2/index"
+  }
+}
+```
+
+## 播放页

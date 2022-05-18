@@ -1,5 +1,6 @@
  /**
   * 节流：每隔一段时间请求一次
+  * 获取当前时间和上次开始时间 如果超过设定时间就执行一次
   * @param {*} fn 需要节流处理的函数
   * @param {*} interval 延时时间
   * @param {*} options leading 代表首次是否执行, trailing 代表结束后是否再执行一次

@@ -28,6 +28,13 @@
           "query": "id=2364025740&type=menu",
           "launchMode": "default",
           "scene": null
+        },
+        {
+          "name": "detail-search",
+          "pathName": "pages/detail-search/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
         }
       ]
     }
