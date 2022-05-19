@@ -53,45 +53,43 @@ Page({
   async handleSearchChange(event) {
     // 获取输入的关键字
     const searchValue = event.detail.trim()
-    // 保存关键字
+    // 保存关键字, 清空搜索结果
     this.setData({
-      searchValue
-    })
-    // 清空搜索结果
-    this.setData({
+      searchValue,
       resultSongs: []
     })
-    console.log(this.data.searchValue);
     // 判断关键字为字符串
     if (!this.data.searchValue.length) {
-      // 清空搜索建议
+      // 清空搜索建议, 清空 node 节点
       this.setData({
-        suggestSongs: []
-      })
-      // 清空 node 节点
-      this.setData({
+        suggestSongs: [],
         suggestSongsNodes: []
       })
+      // 如果长度为空 取消发送请求
+      debounceGetSearchSuggest.cancel()
       return
     }
     // 根据关键字搜索
     const res = await debounceGetSearchSuggest(this.data.searchValue)
+    // 如果没有长度 不渲染页面
+    // if (!this.data.searchValue.length) {
+    //   return
+    // }
     // 获取建议的关键字歌曲
     this.setData({
       suggestSongs: res.result.allMatch
     })
+    if (!this.data.suggestSongs) return
     // 转成 node 节点
-    if (this.data.suggestSongs) {
-      const suggestKeywords = this.data.suggestSongs.map(item => item.keyword)
-      const suggestSongsNodes = []
-      for (const keyword of suggestKeywords) {
-        const nodes = stringToNodes(keyword, this.data.searchValue)
-        suggestSongsNodes.push(nodes)
-      }
-      this.setData({
-        suggestSongsNodes
-      })
+    const suggestKeywords = this.data.suggestSongs.map(item => item.keyword)
+    const suggestSongsNodes = []
+    for (const keyword of suggestKeywords) {
+      const nodes = stringToNodes(keyword, this.data.searchValue)
+      suggestSongsNodes.push(nodes)
     }
+    this.setData({
+      suggestSongsNodes
+    })
   },
 
   /**

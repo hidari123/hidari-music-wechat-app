@@ -3,7 +3,7 @@
 <van-search class="search" background="#f7f7f7" bind:search="handleSearchAction" bind:change="handleSearchChange" value="{{searchValue}}" show-action="{{searchValue}}" shape="round" placeholder="搜索 音乐/视频/歌手/歌单/电台"></van-search>
 
 <!-- 热门搜索 -->
-<view class="hots" wx:if="{{!searchValue.length}}">
+<view class="hots" wx:if="{{!searchValue.length && !suggestSongs.length}}">
   <area-header title="热门搜索" showMore="{{false}}"></area-header>
   <view class="hot-list">
     <block wx:for="{{hotKeyWords}}" wx:key="first">

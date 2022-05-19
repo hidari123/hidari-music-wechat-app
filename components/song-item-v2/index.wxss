@@ -10,16 +10,16 @@
   padding: 12rpx;
 }
 
-.info {
+.item .info {
   display: 1;
   margin-left: 16rpx;
 }
 
-.info .name {
+.item .info .name {
   font-size: 30rpx;
 }
 
-.info .text {
+.item .info .text {
   /* 显示两行 */
   text-overflow: ellipsis;
   display: -webkit-box;

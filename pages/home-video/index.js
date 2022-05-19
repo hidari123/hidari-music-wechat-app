@@ -49,9 +49,7 @@ Page({
     }
     // 设置数据
     this.setData({
-      topMVs: newData
-    })
-    this.setData({
+      topMVs: newData,
       hasMore: res.hasMore
     })
     // 关闭加载动画

@@ -1,0 +1,28 @@
+<!--components/navigation-bar/index.wxml-->
+<view class="nav">
+  <!-- 状态栏 -->
+  <view class="status" style="height: {{statusBarHeight}}px;"></view>
+  <!-- 导航栏 -->
+  <view class="nav-bar" style="height:{{navBarHeight}}px">
+    <!-- 左边 -->
+    <view class="left">
+      <!-- 具名插槽 -->
+      <view class="left-slot">
+        <slot name="left-slot"></slot>
+      </view>
+      <view class="left-arrow" bindtap="handleleftBtnClick">
+        <image class="arrow" mode="widthFix" src="/assets/images/icons/arrow-left.png"></image>
+      </view>
+    </view>
+    <!-- 中间 -->
+    <view class="center">
+      <!-- 插槽 slot 需要放在前面才能插槽内容为空显示后面的 title -->
+      <view class="center-slot">
+        <slot name="center-slot"></slot>
+      </view>
+      <view class="center-title">{{title}}</view>
+    </view>
+    <!-- 右边 -->
+    <view class="right"></view>
+  </view>
+</view>

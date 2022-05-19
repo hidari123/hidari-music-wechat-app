@@ -46,15 +46,29 @@ page {
 }
 
 .more-container .video-image .image {
+  border-radius: 12rpx;
   width: 100%;
 }
 
-.info .count-more {
+.video-image .info {
+  width: 100%;
+  color: #fff;
+  font-size: 26rpx;
+  display: flex;
+  justify-content: space-between;
+  position: absolute;
+  bottom: 6rpx;
+  padding: 0 6rpx;
+  box-sizing: border-box;
+}
+
+.video-image .info .count-more {
   padding-left: 36rpx;
   position: relative;
 }
 
-.info .count-more::before {
+
+.video-image .info .count-more::before {
   content: "";
   position: absolute;
   left: -2rpx;

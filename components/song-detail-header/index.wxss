@@ -34,26 +34,26 @@
   backdrop-filter: saturate(150%) blur(5px);
 }
 
-.content {
+.detail-content {
   display: flex;
   margin-top: 60rpx;
   padding: 0 50rpx;
 }
 
-.content .image {
+.detail-content .image {
   width: 220rpx;
   height: 220rpx;
   border-radius: 16rpx;
 }
 
-.content .info {
+.detail-content .info {
   position: relative;
   height: 220rpx;
   flex: 1;
   margin-left: 50rpx;
 }
 
-.content .info .title {
+.detail-content .info .title {
   /* 显示两行 */
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -69,24 +69,24 @@
   overflow: hidden;
 }
 
-.content .anthor {
+.detail-content .anthor {
   margin-top: 20rpx;
   display: flex;
   align-items: center;
 }
 
-.content .anthor .avatar {
+.detail-content .anthor .avatar {
   width: 50rpx;
   height: 50rpx;
   border-radius: 25rpx;
 }
 
-.content .anthor .nickname {
+.detail-content .anthor .nickname {
   font-size: 24rpx;
   margin-left: 18rpx;
 }
 
-.content .info .desc {
+.detail-content .info .desc {
   position: absolute;
   bottom: 0;
   left: 0;

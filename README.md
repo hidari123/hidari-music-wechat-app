@@ -30,6 +30,21 @@
       - [搜索关键字高亮](#%E6%90%9C%E7%B4%A2%E5%85%B3%E9%94%AE%E5%AD%97%E9%AB%98%E4%BA%AE)
       - [搜索结果](#%E6%90%9C%E7%B4%A2%E7%BB%93%E6%9E%9C)
   - [播放页](#%E6%92%AD%E6%94%BE%E9%A1%B5)
+    - [播放页UI设计](#%E6%92%AD%E6%94%BE%E9%A1%B5ui%E8%AE%BE%E8%AE%A1)
+      - [跳转到播放页](#%E8%B7%B3%E8%BD%AC%E5%88%B0%E6%92%AD%E6%94%BE%E9%A1%B5)
+      - [自定义导航栏组件](#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AF%BC%E8%88%AA%E6%A0%8F%E7%BB%84%E4%BB%B6)
+      - [分页效果处理](#%E5%88%86%E9%A1%B5%E6%95%88%E6%9E%9C%E5%A4%84%E7%90%86)
+      - [动态计算是否展示歌词](#%E5%8A%A8%E6%80%81%E8%AE%A1%E7%AE%97%E6%98%AF%E5%90%A6%E5%B1%95%E7%A4%BA%E6%AD%8C%E8%AF%8D)
+    - [事件处理](#%E4%BA%8B%E4%BB%B6%E5%A4%84%E7%90%86)
+      - [设置音乐自动播放](#%E8%AE%BE%E7%BD%AE%E9%9F%B3%E4%B9%90%E8%87%AA%E5%8A%A8%E6%92%AD%E6%94%BE)
+      - [进度条进度控制](#%E8%BF%9B%E5%BA%A6%E6%9D%A1%E8%BF%9B%E5%BA%A6%E6%8E%A7%E5%88%B6)
+      - [切割歌词](#%E5%88%87%E5%89%B2%E6%AD%8C%E8%AF%8D)
+      - [匹配歌词](#%E5%8C%B9%E9%85%8D%E6%AD%8C%E8%AF%8D)
+      - [歌词](#%E6%AD%8C%E8%AF%8D)
+    - [逻辑抽取](#%E9%80%BB%E8%BE%91%E6%8A%BD%E5%8F%96)
+      - [状态管理逻辑抽取](#%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E9%80%BB%E8%BE%91%E6%8A%BD%E5%8F%96)
+      - [播放页播放监听逻辑抽取](#%E6%92%AD%E6%94%BE%E9%A1%B5%E6%92%AD%E6%94%BE%E7%9B%91%E5%90%AC%E9%80%BB%E8%BE%91%E6%8A%BD%E5%8F%96)
+      - [播放状态栏处理](#%E6%92%AD%E6%94%BE%E7%8A%B6%E6%80%81%E6%A0%8F%E5%A4%84%E7%90%86)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -221,7 +236,10 @@ function padLeftZero(time) {
 function formatDuration(duration) {
   duration = duration / 1000 // 转化为秒
   var minute = Math.floor(duration / 60) // 向下取整 => 分钟
-  var second = duration % 60 // 取余 => 秒
+  // 要先变成整数 不然会出现很多小数点
+  // 222.683 % 60 => 42.68299999999999
+  // 222 % 60 => 42
+  var second = Math.floor(duration) % 60 // 向下取整 => 取余 => 秒
   return padLeftZero(minute) + ':' + padLeftZero(second)
 }
 
@@ -1655,7 +1673,7 @@ App({
     // 初始化屏幕宽度
     screenWidth: 0,
     // 初始化屏幕高度
-    screenHeight: 0
+    srceenHeight: 0
   },
   // 程序启动生命周期
   onLaunch() {
@@ -2848,22 +2866,31 @@ Page({
     this.setData({
       searchValue
     })
-    console.log(this.data.searchValue);
     // 判断关键字为字符串
     if (!this.data.searchValue.length) {
       // 清空搜索建议
       this.setData({
         suggestSongs: []
       })
+      // 清空 node 节点
+      this.setData({
+        suggestSongsNodes: []
+      })
+      // 如果长度为空 取消发送请求
+      debounceGetSearchSuggest.cancel()
       return
     }
     // 根据关键字搜索
     const res = await debounceGetSearchSuggest(this.data.searchValue)
+    // 如果没有长度 不渲染页面
+    // if (!this.data.searchValue.length) {
+    //   return
+    // }
+    // 获取建议的关键字歌曲
     this.setData({
       suggestSongs: res.result.allMatch
     })
-  }
-})
+  },
 ```
 
 #### 搜索关键字高亮
@@ -3020,18 +3047,17 @@ Page({
     this.setData({
       suggestSongs: res.result.allMatch
     })
+    if (!this.data.suggestSongs) return
     // 转成 node 节点
-    if (this.data.suggestSongs) {
-      const suggestKeywords = this.data.suggestSongs.map(item => item.keyword)
-      const suggestSongsNodes = []
-      for (const keyword of suggestKeywords) {
-        const nodes = stringToNodes(keyword, this.data.searchValue)
-        suggestSongsNodes.push(nodes)
-      }
-      this.setData({
-        suggestSongsNodes
-      })
+    const suggestKeywords = this.data.suggestSongs.map(item => item.keyword)
+    const suggestSongsNodes = []
+    for (const keyword of suggestKeywords) {
+      const nodes = stringToNodes(keyword, this.data.searchValue)
+      suggestSongsNodes.push(nodes)
     }
+    this.setData({
+      suggestSongsNodes
+    })
   }
 })
 ```
@@ -3214,3 +3240,926 @@ Page({
 ```
 
 ## 播放页
+### 播放页UI设计
+#### 跳转到播放页
+`components/song-item-v1/index.wxml`和`components/song-item-v2/index.wxml`
+```html
+<view class="item" bindtap="handleItemClick">
+```
+`components/song-item-v1/index.js`和`components/song-item-v2/index.js`
+```js
+    handleItemClick() {
+      // 获取歌曲 id
+      const id = this.properties.item.id
+      // playerStore.dispatch("playMusicWithSongIdAction", {
+      //   id
+      // });
+      wx.navigateTo({
+        url: `/pages/music-player/index?id=${id}`,
+      })
+    }
+```
+
+#### 自定义导航栏组件
+
+> 思路：设置原先的`nav`不显示，利用插槽选择显示，`css`中设置`.xxx-slot:empty+.yyy-zzz`选择展示样式
+```json
+{
+  // 不显示 nav
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "navigation-bar": "/components/navigation-bar/index"
+  }
+}
+```
+```html
+<view class="nav">
+  <!-- 状态栏 -->
+  <view class="status" style="height: {{statusBarHeight}}px;"></view>
+  <!-- 导航栏 -->
+  <view class="nav-bar" style="height:{{navBarHeight}}px">
+    <!-- 左边 -->
+    <view class="left">
+      <!-- 具名插槽 -->
+      <view class="left-slot">
+        <slot name="left-slot"></slot>
+      </view>
+      <view class="left-arrow" bindtap="handleleftBtnClick">
+        <image class="arrow" mode="widthFix" src="/assets/images/icons/arrow-left.png"></image>
+      </view>
+    </view>
+    <!-- 中间 -->
+    <view class="center">
+      <!-- 插槽 slot 需要放在前面才能插槽内容为空显示后面的 title -->
+      <view class="center-slot">
+        <slot name="center-slot"></slot>
+      </view>
+      <view class="center-title">{{title}}</view>
+    </view>
+    <!-- 右边 -->
+    <view class="right"></view>
+  </view>
+</view>
+```
+```js
+// components/navigation-bar/index.js
+const {
+  globalData
+} = getApp()
+Component({
+  options: {
+    // 启用多个插槽
+    multipleSlots: true
+  },
+  /**
+   * 组件的属性列表
+   */
+  properties: {
+    title: {
+      type: String,
+      value: "默认标题"
+    }
+  },
+
+  data: {
+    statusBarHeight: globalData.statusBarHeight,
+    navBarHeight: globalData.navBarHeight
+  }
+})
+```
+```css
+/* components/navigation-bar/index.wxss */
+
+
+.nav-bar {
+  display: flex;
+  text-align: center;
+}
+
+.left,
+.right {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100rpx;
+}
+
+.left-arrow {
+  display: block;
+}
+
+.left-slot:empty+.left-arrow {
+  display: block;
+}
+
+.center-title {
+  display: none;
+}
+
+.center-slot:empty+.center-title {
+  display: block;
+}
+
+.left .left-arrow .arrow {
+  width: 44rpx;
+  display: block;
+}
+
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+```
+
+#### 分页效果处理
+
+> 思路：`swiper`处理分页
+
+```html
+<!-- 内容 -->
+<swiper class="content" style="height: {{contentHeight}}px;" bindchange="handleSwiperChange">
+  <swiper-item>1</swiper-item>
+  <swiper-item>2</swiper-item>
+</swiper>
+```
+```js
+// pages/music-player/index.js
+
+import {
+  getSongDetail
+} from '../../service/api_player'
+Page({
+
+  /**
+   * 页面的初始数据
+   */
+  data: {
+    // 页面跳转传入的 id
+    id: 0,
+    // 当前歌曲
+    currentSong: {},
+    // 当前页
+    currentPage: 0,
+    // 内容区高度
+    contentHeight: 0
+  },
+
+  /**
+   * 生命周期函数--监听页面加载
+   */
+  onLoad(options) {
+    // 获取传入的 id
+    const id = options.id
+    this.setData({
+      id
+    })
+
+    // 根据 id 获取数据
+    this.getPageData()
+
+    // 动态计算内容区高度
+    this.getContentHeight()
+  },
+
+  /**
+   * 网络请求
+   */
+  async getPageData() {
+    const res = await getSongDetail(this.data.id)
+    this.setData({
+      currentSong: res.songs[0]
+    })
+  },
+
+  /**
+   * 动态计算内容区高度
+   */
+  getContentHeight() {
+    const {
+      statusBarHeight,
+      navBarHeight,
+      screenHeight
+    } = getApp().globalData
+    const contentHeight = screenHeight - statusBarHeight - navBarHeight
+    this.setData({
+      contentHeight
+    })
+  },
+
+  /**
+   * 事件处理 - 切换 swiper
+   */
+  handleSwiperChange(event) {
+    const currentPage = event.detail.current
+    this.setData({
+      currentPage
+    })
+  }
+})
+```
+
+#### 动态计算是否展示歌词
+
+> 通过计算屏幕高宽比判断是否展示歌词
+
+`app.js`
+```diff
+// app.js
+App({
+  // 定义全局数据
+  globalData: {
+    // 初始化屏幕宽度
+    screenWidth: 0,
+    // 初始化屏幕高度
+    screenHeight: 0,
+    // 状态栏高度
+    statusBarHeight: 0,
+    // 导航栏的高度
+    navBarHeight: 44,
++    // 屏幕高宽比
++    deviceRatio: 0
+  },
+  // 程序启动生命周期
+  onLaunch() {
+    // 获取屏幕宽高
+    const info = wx.getSystemInfoSync()
+    this.globalData.screenWidth = info.screenWidth
+    this.globalData.screenHeight = info.screenHeight
+    // 获取状态栏高度
+    this.globalData.statusBarHeight = info.statusBarHeight
++    // 计算高宽比
++    const ratio = info.screenHeight / info.screenWidth;
++    this.globalData.deviceRatio = ratio;
+  }
+})
+```
+
+`pages\music-player\index.wxml`
+```html
+      <!-- 歌词 -->
+      <view class="lyric" wx:if="{{isMusicLyric}}">{{currentLyricText}}</view>
+```
+```diff
+// pages/music-player/index.js
+
+import {
+  getSongDetail
+} from '../../service/api_player'
+Page({
+
+  /**
+   * 页面的初始数据
+   */
+  data: {
+    // 页面跳转传入的 id
+    id: 0,
+    // 当前歌曲
+    currentSong: {},
+    // 当前页
+    currentPage: 0,
+    // 内容区高度
+    contentHeight: 0,
++    // 是否显示歌词
++    isMusicLyric: true
+  },
+
+  /**
+   * 生命周期函数--监听页面加载
+   */
+  onLoad(options) {
+    // 获取传入的 id
+    const id = options.id
+    this.setData({
+      id
+    })
+
+    // 根据 id 获取数据
+    this.getPageData()
+
+    // 动态计算内容区高度
+    this.getContentHeight()
+  },
+
+  /**
+   * 网络请求
+   */
+  async getPageData() {
+    const res = await getSongDetail(this.data.id)
+    this.setData({
+      currentSong: res.songs[0]
+    })
+  },
+
+  /**
+   * 动态计算内容区高度
+   */
+  getContentHeight() {
+    const {
+      statusBarHeight,
+      navBarHeight,
+      screenHeight,
++      deviceRatio
+    } = getApp().globalData
+    const contentHeight = screenHeight - statusBarHeight - navBarHeight
+    this.setData({
+      contentHeight
+    })
++    this.setData({
++      isMusicLyric: deviceRatio >= 2
++    })
+  },
+
+  /**
+   * 事件处理 - 切换 swiper
+   */
+  handleSwiperChange(event) {
+    const currentPage = event.detail.current
+    this.setData({
+      currentPage
+    })
+  }
+})
+```
+
+### 事件处理
+
+#### 设置音乐自动播放
+```js
+/**
+ * 播放相关仓库
+ */
+
+const audioContext = wx.createInnerAudioContext()
+
+export {
+  audioContext
+}
+```
+```js
+    // 创建播放器
+    // 停止上一个音乐
+    audioContext.stop()
+    audioContext.src = `https://music.163.com/song/media/outer/url?id=${id}.mp3`
+    // 自动开启播放
+    audioContext.autoplay = true
+    audioContext.onCanplay(() => {
+      // 想要跳转播放需要 play() 方法
+      audioContext.play()
+    })
+```
+
+#### 进度条进度控制
+
+> weapp `slider`滑块有`bindchange`滑块位置改变事件和`bindchanging`拖动滑块事件
+
+```html
+        <slider class="slider" block-size="{{12}}" value="{{sliderValue}}" bindchange="handleSliderChange" bindchanging="handleSliderChanging">
+```
+```js
+  data: {
+    // 歌曲时长
+    durationTime: 0,
+    // 当前播放时间
+    currentTime: 0,
+    // 滑块值
+    sliderValue: 0,
+    // 是否正在移动滑块
+    isSliderChanging: false
+  },
+```
+1. 随时间移动获取当前播放时间，改变滑块移动位置
+```js
+    audioContext.onTimeUpdate(() => {
+      // 当前播放时间
+      const currentTime = audioContext.currentTime * 1000
+      // 如果滑块在移动，停止监听随时间变化的事件
+      if (this.data.isSliderChanging) return
+      // 滑块移动值
+      const sliderValue = currentTime / this.data.durationTime * 100
+      this.setData({
+        currentTime,
+        sliderValue
+      })
+    })
+```
+2. 点击移动滑块跳转到指定位置播放
+
+```js
+  /**
+   * 事件处理 - slider点击获取变化的百分比
+   */
+  handleSliderChange(event) {
+    const value = event.detail.value
+    // 拿到需要播放的 currentTime
+    const currentTime = this.data.durationTime * value / 100
+    // 设置 context 播放 currentTime 位置的值
+    // 先暂停音乐
+    audioContext.pause()
+    // 转到想要播放的时间 转化成秒
+    audioContext.seek(currentTime / 1000)
+    // 记录最新的 sliderValue
+    this.setData({
+      sliderValue: value,
+      isSliderChanging: false
+    })
+  },
+```
+
+3. 拖动滑块改变进度条和时间
+- 在拖动时需要暂停随时间变化而变化的进度条和播放时间，防止冲突，设定变量`isSliderChanging`
+```diff
+    audioContext.onTimeUpdate(() => {
++      // 如果滑块在移动，停止监听随时间变化的事件
++      if (this.data.isSliderChanging) return
+      // 当前播放时间
+      const currentTime = audioContext.currentTime * 1000
+      // 滑块移动值
+      const sliderValue = currentTime / this.data.durationTime * 100
+      this.setData({
+        currentTime,
+        sliderValue
+      })
+    })
+```
+```js
+  /**
+   * 事件处理 - 滑动滑块 swiper
+   */
+  handleSliderChanging(event) {
+    // 确定滑块移动位置
+    const value = event.detail.value
+    // 更改当前播放时间
+    const currentTime = this.data.durationTime * value / 100
+    this.setData({
+      isSliderChanging: true,
+      currentTime
+    })
+  }
+```
+
+#### 切割歌词
+`utils\parse-lyric.js`
+```js
+/**
+ * 切割歌词
+ */
+
+// 正则表达式匹配时间 () 分块 不要乱加空格
+// [00:00.000] 
+const timeRegExp = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/
+export const getParseLyric = (lyricString) => {
+  const lyricStrings = lyricString.split('\n')
+  const lyricInfos = []
+  // 正则截取时间
+  // for in => 遍历键名  for of => 遍历键值
+  for (const lineString of lyricStrings) {
+    // [00:00.000] 作词 : 唐恬
+    // continue 跳过本次循环 执行下一次
+    if (lineString === "") continue
+
+    // 获取时间
+    const timeResult = timeRegExp.exec(lineString)
+    // 字符串 * 数字 隐式转化
+    const minite = timeResult[1] * 60 * 1000 // 分
+    const second = timeResult[2] * 1000 // 秒
+    const millisecondTime = timeResult[3] // 毫秒
+    const millisecond = millisecondTime.length === 2 ? millisecondTime * 10 : millisecondTime * 1
+    const time = minite + second + millisecond
+
+    // 获取文本
+    const text = lineString.replace(timeRegExp, "")
+    lyricInfos.push({
+      time,
+      text
+    })
+  }
+  return lyricInfos
+}
+```
+
+#### 匹配歌词
+
+> 思路：取出歌词时间，对比当前时间，通过循环找到当前时间对应的歌词（判断当前时间是否小于歌词时间，如果小于，取前一条歌词进行展示）。因为歌曲一直在播放，所以不停的进入for循环，找到了之后break退出当前循环，因为一直在播放所以进入下一次循环，再break
+
+```js
+// 监听事件改变
+audioContext.onTimeUpdate(() => {
+  // 根据当前时间查找对应歌词
+  // 每次都是从 0 开始匹配 保证无论前进还是后退都能匹配上
+  let i = 0
+  for (; i < this.data.lyricInfos.length; i++) {
+    // 拿到每句歌词
+    const lyricInfo = this.data.lyricInfos[i]
+    if (currentTime < lyricInfo.time) {
+      // 找到了之后不需要再找 break 跳出循环
+      break
+    }
+  }
+
+  // 设置当前歌词和索引
+  // 找到正确的需要显示的歌词的 index
+  const currentLyricIndex = i - 1
+  console.log(i);
+  // 如果当前 index 和 歌词的 index 不相同 设置 currentLyricText
+  if (this.data.currentLyricIndex !== currentLyricIndex) {
+    // 找到对应歌词
+    const currentLyricText = this.data.lyricInfos[currentLyricIndex].text
+    this.setData({
+      currentLyricText,
+      currentLyricIndex
+    })
+  }
+})
+```
+
+#### 歌词
+1. UI设计
+```html
+    <swiper-item class="lyric">
+      <scroll-view class="lyric-list" scroll-y scroll-with-animation scroll-top="{{lyricScrollTop}}">
+        <block wx:for="{{lyricInfos}}" wx:key="index">
+          <view class="item {{currentLyricIndex === index ? 'active' : ''}}" style="padding-top: {{index === 0 ? (contentHeight/2 - 150) : 0}}px; padding-bottom: {{index === lyricInfos.length - 1 ? (contentHeight/2) : 0}}px;">
+            {{item.text}}
+          </view>
+        </block>
+      </scroll-view>
+    </swiper-item>
+```
+- 给第一句歌词和最后一句歌词加`padding`
+```html
+<view class="item {{currentLyricIndex === index ? 'active' : ''}}" style="padding-top: {{index === 0 ? (contentHeight/2 - 150) : 0}}px; padding-bottom: {{index === lyricInfos.length - 1 ? (contentHeight/2) : 0}}px;">
+```
+```diff
+      if (this.data.currentLyricIndex !== currentLyricIndex) {
+        // 找到对应歌词
+        const currentLyricText = this.data.lyricInfos[currentLyricIndex].text
+        this.setData({
+          currentLyricText,
+          currentLyricIndex,
++          // 设置歌词向上滚动距离 也可以抽取出来常量 放到js和css文件中
++          lyricScrollTop: currentLyricIndex * 35
+        })
+      }
+```
+- 歌词滚动时添加动画`scroll-with-animation`
+```html
+<scroll-view class="lyric-list" scroll-y scroll-with-animation scroll-top="{{lyricScrollTop}}">
+```
+
+### 逻辑抽取
+
+#### 状态管理逻辑抽取
+1. 封装数据保存到仓库并播放歌曲`store\player-store.js`
+```js
+/**
+ * 播放相关仓库
+ */
+import {
+  getSongDetail,
+  getSongLyric
+} from '../service/api_player'
+
+import {
+  getParseLyric
+} from '../utils/parse-lyric'
+
+import {
+  HidariEventStore
+} from '../hidari-event-store/index'
+
+const audioContext = wx.createInnerAudioContext()
+const playerStore = new HidariEventStore({
+  state: {
+    // 歌曲 id
+    id: 0,
+    // 当前播放的歌曲
+    currentSong: {},
+    // 歌曲时长
+    durationTime: 0,
+    // 歌词数组
+    lyricInfos: []
+  },
+  actions: {
+    /**
+     * 根据歌曲id播放音乐
+     * @param {*} ctx 上下文
+     * @param {*} id 歌曲id
+     */
+    playMusicWithSongIdAction(ctx, {
+      id
+    }) {
+      ctx.id = id
+      /**
+       * 请求歌曲信息
+       */
+      getSongDetail(id).then(res => {
+        ctx.currentSong = res.songs[0]
+        ctx.durationTime = res.songs[0].dt
+      })
+      /**
+       * 请求歌词信息
+       */
+      getSongLyric(id).then(res => {
+        const lyricInfos = getParseLyric(res.lrc.lyric)
+        ctx.lyricInfos = lyricInfos
+      })
+      // 创建播放器 播放对应歌曲
+      // 停止上一个音乐
+      audioContext.stop()
+      audioContext.src = `https://music.163.com/song/media/outer/url?id=${id}.mp3`
+      // 自动开启播放
+      audioContext.autoplay = true
+    }
+  }
+})
+export {
+  audioContext,
+  playerStore
+}
+```
+2. 在页面跳转时发送请求
+`components\song-item-v1\index.js`
+`components\song-item-v2\index.js`
+```js
+handleItemClick() {
+  // 获取歌曲 id
+  const id = this.properties.item.id
+  // 发送请求
+  playerStore.dispatch("playMusicWithSongIdAction", {
+    id
+  });
+  wx.navigateTo({
+    url: `/pages/music-player/index?id=${id}`,
+  })
+}
+```
+3. 保存数据
+```js
+  /**
+   * 从store中取值
+   */
+  setupPlayerStoreListener() {
+    playerStore.onStates(["currentSong", "durationTime", "lyricInfos"], ({
+      currentSong,
+      durationTime,
+      lyricInfos
+    }) => {
+      // 有值改变时重新赋值
+      if (currentSong) this.setData({
+        currentSong
+      })
+      if (durationTime) this.setData({
+        durationTime
+      })
+      if (lyricInfos) this.setData({
+        lyricInfos
+      })
+    })
+  }
+```
+
+4. 返回上一页并且不停止播放
+`pages\music-player\index.js`
+```js
+  /**
+   * 事件处理 - 点击左边返回
+   */
+  handleNavbarBackClick() {
+    // 返回 还会继续播放歌曲
+    wx.navigateBack()
+  }
+```
+
+#### 播放页播放监听逻辑抽取
+1. 封装数据`store\player-store.js`
+```js
+    /**
+     * 事件监听 - audioContext
+     * @param {*} ctx 上下文
+     */
+    setupAudioContextListenerAction(ctx) {
+      // 可以开始播放
+      audioContext.onCanplay(() => {
+        // 想要跳转播放需要 play() 方法 这个方法也可以自动播放
+        audioContext.play()
+      })
+      // 监听事件改变
+      audioContext.onTimeUpdate(() => {
+        // 当前播放时间
+        const currentTime = audioContext.currentTime * 1000
+        // 根据当前时间修改 currentTime
+        ctx.currentTime = currentTime
+  
+        // 根据当前时间查找对应歌词
+        // 每次都是从 0 开始匹配 保证无论前进还是后退都能匹配上
+        if (!ctx.lyricInfos.length) return
+        let i = 0
+        for (; i < ctx.lyricInfos.length; i++) {
+          // 拿到每句歌词
+          const lyricInfo = ctx.lyricInfos[i]
+          if (currentTime < lyricInfo.time) {
+            // 找到了之后不需要再找 break 跳出循环
+            break
+          }
+        }
+  
+        // 设置当前歌词和索引
+        // 找到正确的需要显示的歌词的 index
+        const currentLyricIndex = i - 1
+        // 如果当前 index 和 歌词的 index 不相同 设置 currentLyricText
+        if (ctx.currentLyricIndex !== currentLyricIndex) {
+          // 找到对应歌词
+          const currentLyricText = ctx.lyricInfos[currentLyricIndex].text
+          ctx.currentLyricText = currentLyricText
+          ctx.currentLyricIndex = currentLyricIndex
+        }
+      })
+    }
+```
+2. 监听数据`pages\music-player\index.js`
+```js
+    // "currentTime", "currentLyricIndex", "currentLyricText"
+    playerStore.onStates(["currentTime", "currentLyricIndex", "currentLyricText"], ({
+      currentTime,
+      currentLyricIndex,
+      currentLyricText
+    }) => {
+      // 时间变化
+      // 如果滑块不在移动，监听随时间变化的事件
+      if (currentTime && !this.data.isSliderChanging) {
+        // 滑块移动值
+        const sliderValue = currentTime / this.data.durationTime * 100
+        this.setData({
+          currentTime,
+          sliderValue
+        })
+      }
+      // 歌词变化
+      if (currentLyricText) {
+        this.setData({
+          currentLyricText
+        })
+      }
+      // 歌词下标变化
+      if (currentLyricIndex) {
+        this.setData({
+          currentLyricIndex,
+          // 设置歌词向上滚动距离 也可以抽取出来常量 放到js和css文件中
+          lyricScrollTop: currentLyricIndex * 35
+        })
+      }
+    })
+```
+3. 发送请求改变数据
+```diff
+    /**
+     * 根据歌曲id播放音乐
+     * @param {*} ctx 上下文
+     * @param {*} id 歌曲id
+     */
+    playMusicWithSongIdAction(ctx, {
+      id
+    }) {
+      ctx.id = id
+      /**
+       * 请求歌曲信息
+       */
+      getSongDetail(id).then(res => {
+        ctx.currentSong = res.songs[0]
+        ctx.durationTime = res.songs[0].dt
+      })
+      /**
+       * 请求歌词信息
+       */
+      getSongLyric(id).then(res => {
+        const lyricInfos = getParseLyric(res.lrc.lyric)
+        ctx.lyricInfos = lyricInfos
+      })
+
+      // 创建播放器 播放对应歌曲
+      // 停止上一个音乐
+      audioContext.stop()
+      audioContext.src = `https://music.163.com/song/media/outer/url?id=${id}.mp3`
+      // 自动开启播放
+      audioContext.autoplay = true
+
++      // 监听 audioContext 一些事件
++      this.dispatch('setupAudioContextListenerAction')
+    },
+```
+
+#### 播放状态栏处理
+1. 播放模式记录和修改
+- `store\player-store.js`
+```diff
+  state: {
+    // 歌曲 id
+    id: 0,
+    // 当前播放的歌曲
+    currentSong: {},
+    // 歌曲时长
+    durationTime: 0,
+    // 歌词数组
+    lyricInfos: [],
+    // 当前播放的事件
+    currentTime: 0,
+    // 当前播放的歌词index
+    currentLyricIndex: 0,
+    // 当前播放的歌词
+    currentLyricText: '',
++    // 播放模式 => 0 循环播放， 1 单曲播放， 2 随机播放
++    playModeIndex: 0
+  },
+```
+`pages\music-player\index.js`
+```js
+  /**
+   * 事件监听 - 播放模式变化
+   */
+  handleModeBtnClick() {
+    // 计算最新的 playModeIndex
+    let playIndex = this.data.playModeIndex + 1
+    if (playIndex === 3) playIndex = 0
+    console.log(playIndex)
+    playerStore.setState('playModeIndex', playIndex)
+  }
+```
+```js
+    // 监听播放模式相关数据
+    playerStore.onState('playModeIndex', (playModeIndex) => {
+      this.setData({
+        playModeIndex,
+        playModeName: playModeNames[playModeIndex]
+      })
+    })
+```
+
+2. 播放状态的控制
+`store\player-store.js`
+```diff
+  state: {
+    // 歌曲 id
+    id: 0,
+    // 当前播放的歌曲
+    currentSong: {},
+    // 歌曲时长
+    durationTime: 0,
+    // 歌词数组
+    lyricInfos: [],
+    // 当前播放的事件
+    currentTime: 0,
+    // 当前播放的歌词index
+    currentLyricIndex: 0,
+    // 当前播放的歌词
+    currentLyricText: '',
+    // 播放模式 => 0 循环播放， 1 单曲播放， 2 随机播放
+    playModeIndex: 0,
++    // 是否在播放
++    isPlaying: false
+  },
+```
+```js
+    /**
+     * 切换歌曲播放状态
+     * @param {*} ctx 上下文
+     * @param {*} isPlaying 是否正在播放 如果不传默认为 true
+     */
+    changeMusicPlayStatusAction(ctx, isPlaying = true) {
+      ctx.isPlaying = isPlaying;
+      ctx.isPlaying ? audioContext.play() : audioContext.pause()
+    }
+```
+`pages\music-player\index.js`
+```js
+    // 监听播放模式相关数据 'playModeIndex', 'isPlaying'
+    playerStore.onStates(['playModeIndex', 'isPlaying'], ({
+      playModeIndex,
+      isPlaying
+    }) => {
+      // 如果修改播放模式
+      if (playModeIndex !== undefined) {
+        this.setData({
+          playModeIndex,
+          playModeName: playModeNames[playModeIndex]
+        })
+      }
+      // 如果修改播放状态
+      if (isPlaying !== undefined) {
+        this.setData({
+          isPlaying,
+          playingName: isPlaying ? 'pause' : 'resume'
+        })
+      }
+    })
+```
+```js
+  /**
+   * 事件监听 - 播放状态变化 => 播放、暂停
+   */
+  handlePlayBtnClick() {
+    playerStore.dispatch("changeMusicPlayStatusAction", !this.data.isPlaying)
+  }
+```
+

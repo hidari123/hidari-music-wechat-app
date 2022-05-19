@@ -50,7 +50,10 @@ function padLeftZero(time) {
 function formatDuration(duration) {
   duration = duration / 1000 // 转化为秒
   var minute = Math.floor(duration / 60) // 向下取整 => 分钟
-  var second = duration % 60 // 取余 => 秒
+  // 要先变成整数 不然会出现很多小数点
+  // 222.683 % 60 => 42.68299999999999
+  // 222 % 60 => 42
+  var second = Math.floor(duration) % 60 // 向下取整 => 取余 => 秒
   return padLeftZero(minute) + ':' + padLeftZero(second)
 }
 

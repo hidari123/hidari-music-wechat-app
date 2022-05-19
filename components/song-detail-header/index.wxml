@@ -7,7 +7,7 @@
   <view class="bg-cover"></view>
 
   <!-- 内容 -->
-  <view class="content">
+  <view class="detail-content">
     <image class="image" mode="aspectFill" src="{{songsInfo.coverImgUrl}}"></image>
     <view class="info">
       <view class="title">{{songsInfo.name}}</view>
