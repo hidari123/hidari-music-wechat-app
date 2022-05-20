@@ -35,6 +35,7 @@ Component({
       playerStore.dispatch("playMusicWithSongIdAction", {
         id
       });
+      // 播放歌曲
       wx.navigateTo({
         url: `/pages/music-player/index?id=${id}`,
       })

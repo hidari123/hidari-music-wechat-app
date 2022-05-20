@@ -1,5 +1,6 @@
 import {
-  rankingStore
+  rankingStore,
+  playerStore
 } from '../../store/index'
 import {
   getSongData
@@ -67,5 +68,15 @@ Page({
         songsInfo: res
       })
     }
+  },
+
+  /**
+   * 事件监听 - 监听歌曲点击事件获取歌单和index
+   */
+  handleSongItemClick(event) {
+    const index = event.currentTarget.dataset.index
+    console.log(this.data.songsInfo.tracks, index)
+    playerStore.setState('playListSongs', this.data.songsInfo.tracks)
+    playerStore.setState('playListIndex', index)
   }
 })

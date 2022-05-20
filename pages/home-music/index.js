@@ -2,7 +2,8 @@
 
 import {
   rankingStore,
-  rankingMap
+  rankingMap,
+  playerStore
 } from '../../store/index'
 import {
   getBanners,
@@ -12,7 +13,10 @@ import queryRect from '../../utils/query-rect'
 import throttle from '../../utils/throttle'
 
 // 生成节流函数
-const throttleQueryRect = throttle(queryRect)
+const throttleQueryRect = throttle(queryRect, 1000, {
+  // 最后执行一次
+  trailing: true
+})
 Page({
 
   /**
@@ -35,6 +39,12 @@ Page({
       2: {},
       3: {}
     },
+    // 正在播放的歌曲
+    currentSong: {},
+    // 是否正在播放
+    isPlaying: false,
+    // 动画状态
+    playAnimState: "paused"
   },
 
   /**
@@ -53,6 +63,7 @@ Page({
    * 事件处理 - 从 store 获取共享的数据
    */
   setupPlayerStoreListener() {
+    // 1. 排行榜监听
     // store 中取出热门歌单数据
     rankingStore.onState('hotRankings', (res) => {
       if (!res.tracks) return
@@ -64,6 +75,20 @@ Page({
     rankingStore.onState("newRankings", this.getHandleRankingsData(0));
     rankingStore.onState("originRankings", this.getHandleRankingsData(2));
     rankingStore.onState("upRankings", this.getHandleRankingsData(3));
+
+    // 2. 播放器监听 'currentSong', 'isPlaying'
+    playerStore.onStates(['currentSong', 'isPlaying'], ({
+      currentSong,
+      isPlaying
+    }) => {
+      if (currentSong) this.setData({
+        currentSong
+      })
+      if (isPlaying !== undefined) this.setData({
+        isPlaying,
+        playAnimState: isPlaying ? 'running' : 'paused'
+      })
+    })
   },
 
   /**
@@ -183,5 +208,32 @@ Page({
     wx.navigateTo({
       url: `/pages/detail-songs/index?ranking=${name}&&type=rank`,
     })
+  },
+
+  /**
+   * 事件处理 - 点击控制播放暂停
+   */
+  handlePlayBtnClick(event) {
+    playerStore.dispatch("changeMusicPlayStatusAction", !this.data.isPlaying)
+    // 阻止冒泡
+    // event.stopPropgation()
+  },
+
+  /**
+   * 事件处理 - 点击播放栏跳转到播放页
+   */
+  handlePlayBarClick() {
+    wx.navigateTo({
+      url: `/pages/music-player/index?id=${this.data.currentSong.id}`,
+    })
+  },
+
+  /**
+   * 事件监听 - 监听歌曲点击事件获取歌单和index
+   */
+  handleSongItemClick(event) {
+    const index = event.currentTarget.dataset.index
+    playerStore.setState('playListSongs', this.data.recommendSongs)
+    playerStore.setState('playListIndex', index)
   }
 })

@@ -59,7 +59,6 @@ Page({
     this.setData({
       id
     })
-
     // 根据 id 获取数据（store）
     this.setupPlayerStoreListener()
 
@@ -181,14 +180,20 @@ Page({
     const currentTime = this.data.durationTime * value / 100
     // 设置 context 播放 currentTime 位置的值
     // 先暂停音乐
-    audioContext.pause()
-    // 转到想要播放的时间 转化成秒
-    audioContext.seek(currentTime / 1000)
+    // audioContext.pause()
     // 记录最新的 sliderValue
     this.setData({
       sliderValue: value,
+      currentTime,
       isSliderChanging: false
     })
+    // 把当前播放时间传给 store 记录
+    playerStore.setState('currentTime', currentTime)
+    // 如果在播放，跳转，未在播放，依旧暂停
+    if (this.data.isPlaying) {
+      // 转到想要播放的时间 转化成秒
+      audioContext.seek(currentTime / 1000)
+    }
   },
 
   /**
@@ -229,6 +234,20 @@ Page({
    */
   handlePlayBtnClick() {
     playerStore.dispatch("changeMusicPlayStatusAction", !this.data.isPlaying)
+  },
+
+  /**
+   * 事件监听 - 切换上一首
+   */
+  handlePrevBtnClick() {
+    playerStore.dispatch('changeNewMusicAction', false)
+  },
+
+  /**
+   * 事件监听 - 播放下一首
+   */
+  handleNextBtnClick() {
+    playerStore.dispatch('changeNewMusicAction')
   }
   // /**
   //  * 监听滚动事件

@@ -14,9 +14,15 @@ import {
   HidariEventStore
 } from '../hidari-event-store/index'
 
-const audioContext = wx.createInnerAudioContext()
+// const audioContext = wx.createInnerAudioContext()
+// 切换背景播放模式 切出后台也可以播放
+const audioContext = wx.getBackgroundAudioManager()
 const playerStore = new HidariEventStore({
   state: {
+    // 是否是第一次播放
+    isFirstPlay: true,
+    // 是否是停止状态
+    isStopping: false,
     // 歌曲 id
     id: 0,
     // 当前播放的歌曲
@@ -34,26 +40,48 @@ const playerStore = new HidariEventStore({
     // 播放模式 => 0 循环播放， 1 单曲播放， 2 随机播放
     playModeIndex: 0,
     // 是否在播放
-    isPlaying: false
+    isPlaying: false,
+    // 当前播放的歌单
+    playListSongs: [],
+    // 当前播放的歌曲在歌单中的位置
+    playListIndex: 0
   },
   actions: {
     /**
      * 根据歌曲id播放音乐
      * @param {*} ctx 上下文
-     * @param {*} id 歌曲id
+     * @param {*} id 歌曲id 
+     * @param {*} isRefresh 是否需要刷新 默认不需要
      */
     playMusicWithSongIdAction(ctx, {
-      id
+      id,
+      isRefresh = false
     }) {
+      // 如果播放的是上次的歌
+      // 如果不需要刷新，继续播放
+      if (ctx.id == id && !isRefresh) {
+        // 每次点进来就直接开始播放
+        this.dispatch('changeMusicPlayStatusAction')
+        return
+      }
       ctx.id = id
       // 修改播放状态
       ctx.isPlaying = true
+
+      // 0、清空之前的数据
+      ctx.currentSong = {}
+      ctx.durationTime = 0
+      ctx.lyricInfos = []
+      ctx.currentTime = 0
+      ctx.currentLyricIndex = 0
+      ctx.currentLyricText = ""
       /**
        * 请求歌曲信息
        */
       getSongDetail(id).then(res => {
         ctx.currentSong = res.songs[0]
         ctx.durationTime = res.songs[0].dt
+        audioContext.title = res.songs[0].name
       })
       /**
        * 请求歌词信息
@@ -62,20 +90,26 @@ const playerStore = new HidariEventStore({
         const lyricInfos = getParseLyric(res.lrc.lyric)
         ctx.lyricInfos = lyricInfos
       })
-
       // 创建播放器 播放对应歌曲
       // 停止上一个音乐
       audioContext.stop()
       audioContext.src = `https://music.163.com/song/media/outer/url?id=${id}.mp3`
       // 自动开启播放
+      // 切换后台播放 wx.getBackgroundAudioManager() 需要有 title 
+      audioContext.title = id
       audioContext.autoplay = true
 
       // 监听 audioContext 一些事件
-      this.dispatch('setupAudioContextListenerAction')
+      // 用的是同一个 audioContext 不用每次都开始监听
+      // 第一次播放添加监听
+      if (ctx.isFirstPlay) {
+        this.dispatch('setupAudioContextListenerAction')
+        ctx.isFirstPlay = false
+      }
     },
 
     /**
-     * 事件监听 - audioContext
+     * 监听播放器时间变化
      * @param {*} ctx 上下文
      */
     setupAudioContextListenerAction(ctx) {
@@ -115,6 +149,27 @@ const playerStore = new HidariEventStore({
           ctx.currentLyricIndex = currentLyricIndex
         }
       })
+
+      // 监听播放完成，自动播放下一首歌曲。
+      audioContext.onEnded(() => {
+        this.dispatch("changeNewMusicAction")
+      })
+
+      // 监听音乐 暂停 / 播放
+      // 播放
+      audioContext.onPlay(() => {
+        ctx.isPlaying = true
+      })
+      // 暂停
+      audioContext.onPause(() => {
+        ctx.isPlaying = false
+      })
+      // 停止
+      audioContext.onStop(() => {
+        ctx.isPlaying = false
+        // 设置为停止状态
+        ctx.isStopping = true
+      })
     },
 
     /**
@@ -123,8 +178,68 @@ const playerStore = new HidariEventStore({
      * @param {*} isPlaying 是否正在播放 如果不传默认为 true
      */
     changeMusicPlayStatusAction(ctx, isPlaying = true) {
-      ctx.isPlaying = isPlaying;
-      ctx.isPlaying ? audioContext.play() : audioContext.pause()
+      ctx.isPlaying = isPlaying
+      if (ctx.isStopping && ctx.isPlaying) {
+        audioContext.src = `https://music.163.com/song/media/outer/url?id=${ctx.id}.mp3`
+        // 自动开启播放
+        // 切换后台播放 wx.getBackgroundAudioManager() 需要有 title 
+        audioContext.title = ctx.currentSong.name
+        ctx.isStopping = false
+      }
+      // 暂停再开始时从当前位置开始播放
+      ctx.isPlaying ? audioContext.seek(ctx.currentTime / 1000) : audioContext.pause()
+    },
+
+    /**
+     * 切换上一首 / 下一首歌曲
+     */
+    changeNewMusicAction(ctx, isNext = true) {
+      // 获取当前索引
+      let currentIndex = ctx.playListIndex
+      // 根据不同模式，获取下一首歌索引
+      switch (ctx.playModeIndex) {
+        case 0:
+          // 顺序播放
+          currentIndex = isNext ? currentIndex + 1 : currentIndex - 1
+          // 如果是最后一首，播放第一首
+          if (currentIndex === ctx.playListSongs.length) currentIndex = 0
+          // 如果是第一首，播放最后一首
+          if (currentIndex === -1) currentIndex = ctx.playListSongs.length - 1
+          break
+        case 1:
+          // 单曲循环 直接退出 还是播放这首歌
+          // index = index
+          break
+        case 2:
+          // 随机播放
+          // Math.random() 后面有() 是一个函数
+          const index = Math.floor(Math.random() * ctx.playListSongs.length)
+          // 如果是同一首歌 继续切换下一首
+          if (index === currentIndex) {
+            this.dispatch('changeNewMusicAction', isNext)
+            return
+          }
+          currentIndex = index
+          // 记录新的索引
+          ctx.playListIndex = currentIndex
+          break
+      }
+
+      // 获取歌曲
+      let currentSong = ctx.playListSongs[currentIndex]
+      // 如果没有值 播放同一曲
+      if (!currentSong) {
+        currentSong = ctx.currentSong
+      } else {
+        // 记录新的索引
+        ctx.playListIndex = currentIndex
+      }
+
+      // 播放新的歌曲
+      this.dispatch('playMusicWithSongIdAction', {
+        id: currentSong.id,
+        isRefresh: true
+      })
     }
   }
 })

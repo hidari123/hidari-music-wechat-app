@@ -32,7 +32,8 @@ Component({
       // 发送请求
       playerStore.dispatch("playMusicWithSongIdAction", {
         id
-      });
+      })
+      // 页面跳转
       wx.navigateTo({
         url: `/pages/music-player/index?id=${id}`,
       })

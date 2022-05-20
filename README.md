@@ -13,6 +13,7 @@
   - [首页](#%E9%A6%96%E9%A1%B5)
     - [search 搜索框](#search-%E6%90%9C%E7%B4%A2%E6%A1%86)
     - [轮播图(节流，图片高度)](#%E8%BD%AE%E6%92%AD%E5%9B%BE%E8%8A%82%E6%B5%81%E5%9B%BE%E7%89%87%E9%AB%98%E5%BA%A6)
+      - [轮播图高度处理](#%E8%BD%AE%E6%92%AD%E5%9B%BE%E9%AB%98%E5%BA%A6%E5%A4%84%E7%90%86)
     - [推荐歌曲组件（插槽）](#%E6%8E%A8%E8%8D%90%E6%AD%8C%E6%9B%B2%E7%BB%84%E4%BB%B6%E6%8F%92%E6%A7%BD)
     - [封装 weapp 事件的全局状态管理工具](#%E5%B0%81%E8%A3%85-weapp-%E4%BA%8B%E4%BB%B6%E7%9A%84%E5%85%A8%E5%B1%80%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7)
       - [封装hidari全局状态管理工具](#%E5%B0%81%E8%A3%85hidari%E5%85%A8%E5%B1%80%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7)
@@ -45,6 +46,23 @@
       - [状态管理逻辑抽取](#%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E9%80%BB%E8%BE%91%E6%8A%BD%E5%8F%96)
       - [播放页播放监听逻辑抽取](#%E6%92%AD%E6%94%BE%E9%A1%B5%E6%92%AD%E6%94%BE%E7%9B%91%E5%90%AC%E9%80%BB%E8%BE%91%E6%8A%BD%E5%8F%96)
       - [播放状态栏处理](#%E6%92%AD%E6%94%BE%E7%8A%B6%E6%80%81%E6%A0%8F%E5%A4%84%E7%90%86)
+    - [细节补充](#%E7%BB%86%E8%8A%82%E8%A1%A5%E5%85%85)
+      - [暂停后跳转到指定时间依旧暂停](#%E6%9A%82%E5%81%9C%E5%90%8E%E8%B7%B3%E8%BD%AC%E5%88%B0%E6%8C%87%E5%AE%9A%E6%97%B6%E9%97%B4%E4%BE%9D%E6%97%A7%E6%9A%82%E5%81%9C)
+      - [切换歌曲后清空上次歌曲数据防止继续显示](#%E5%88%87%E6%8D%A2%E6%AD%8C%E6%9B%B2%E5%90%8E%E6%B8%85%E7%A9%BA%E4%B8%8A%E6%AC%A1%E6%AD%8C%E6%9B%B2%E6%95%B0%E6%8D%AE%E9%98%B2%E6%AD%A2%E7%BB%A7%E7%BB%AD%E6%98%BE%E7%A4%BA)
+      - [切换上一首 / 下一首](#%E5%88%87%E6%8D%A2%E4%B8%8A%E4%B8%80%E9%A6%96--%E4%B8%8B%E4%B8%80%E9%A6%96)
+      - [监听歌曲 自动播放下一首](#%E7%9B%91%E5%90%AC%E6%AD%8C%E6%9B%B2-%E8%87%AA%E5%8A%A8%E6%92%AD%E6%94%BE%E4%B8%8B%E4%B8%80%E9%A6%96)
+    - [首页播放栏](#%E9%A6%96%E9%A1%B5%E6%92%AD%E6%94%BE%E6%A0%8F)
+    - [使用背景播放器播放音乐](#%E4%BD%BF%E7%94%A8%E8%83%8C%E6%99%AF%E6%92%AD%E6%94%BE%E5%99%A8%E6%92%AD%E6%94%BE%E9%9F%B3%E4%B9%90)
+      - [使用背景播放器暂停 / 开始状态控制](#%E4%BD%BF%E7%94%A8%E8%83%8C%E6%99%AF%E6%92%AD%E6%94%BE%E5%99%A8%E6%9A%82%E5%81%9C--%E5%BC%80%E5%A7%8B%E7%8A%B6%E6%80%81%E6%8E%A7%E5%88%B6)
+      - [控制后台播放停止后，页面状态改变和点击重新开始播放](#%E6%8E%A7%E5%88%B6%E5%90%8E%E5%8F%B0%E6%92%AD%E6%94%BE%E5%81%9C%E6%AD%A2%E5%90%8E%E9%A1%B5%E9%9D%A2%E7%8A%B6%E6%80%81%E6%94%B9%E5%8F%98%E5%92%8C%E7%82%B9%E5%87%BB%E9%87%8D%E6%96%B0%E5%BC%80%E5%A7%8B%E6%92%AD%E6%94%BE)
+  - [用户登录](#%E7%94%A8%E6%88%B7%E7%99%BB%E5%BD%95)
+    - [登陆步骤解析](#%E7%99%BB%E9%99%86%E6%AD%A5%E9%AA%A4%E8%A7%A3%E6%9E%90)
+    - [实现登录](#%E5%AE%9E%E7%8E%B0%E7%99%BB%E5%BD%95)
+      - [封装请求](#%E5%B0%81%E8%A3%85%E8%AF%B7%E6%B1%82)
+    - [判断token和session是否过期](#%E5%88%A4%E6%96%ADtoken%E5%92%8Csession%E6%98%AF%E5%90%A6%E8%BF%87%E6%9C%9F)
+    - [封装 header](#%E5%B0%81%E8%A3%85-header)
+    - [获取用户信息](#%E8%8E%B7%E5%8F%96%E7%94%A8%E6%88%B7%E4%BF%A1%E6%81%AF)
+      - [openid 和 unionid](#openid-%E5%92%8C-unionid)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -952,6 +970,18 @@ page {
     transform: translateY(0);
   }
   ```
+
+#### 轮播图高度处理
+
+> 因为开启节流，第一次轮播图图片还未加载完，默认高度240，图片加载完毕后没有再次执行函数，导致有时候图片高度不对，在最后执行一次函数，解决问题
+
+```diff
+// 生成节流函数
++ const throttleQueryRect = throttle(queryRect, 1000, {
++  // 最后执行一次
++  trailing: true
+})
+```
 
 ### 推荐歌曲组件（插槽）
 `components\area-header`
@@ -4162,4 +4192,1098 @@ handleItemClick() {
     playerStore.dispatch("changeMusicPlayStatusAction", !this.data.isPlaying)
   }
 ```
+### 细节补充
+#### 暂停后跳转到指定时间依旧暂停
 
+1. 更改 store 中重新开始播放位置为当前位置
+```js
+    /**
+     * 切换歌曲播放状态
+     * @param {*} ctx 上下文
+     * @param {*} isPlaying 是否正在播放 如果不传默认为 true
+     */
+    changeMusicPlayStatusAction(ctx, isPlaying = true) {
+      ctx.isPlaying = isPlaying;
+      console.log(isPlaying ? 'play' : 'pause');
+      // 暂停再开始时从当前位置开始播放
+      ctx.isPlaying ? audioContext.seek(ctx.currentTime / 1000) : audioContext.pause()
+    }
+```
+2. 只有在播放状态下会继续播放，否则把跳转后的时间传递给 store
+```js
+  /**
+   * 事件处理 - slider点击获取变化的百分比
+   */
+  handleSliderChange(event) {
+    const value = event.detail.value
+    // 拿到需要播放的 currentTime
+    const currentTime = this.data.durationTime * value / 100
+    // 设置 context 播放 currentTime 位置的值
+    // 先暂停音乐
+    audioContext.pause()
+    // 记录最新的 sliderValue
+    this.setData({
+      sliderValue: value,
+      currentTime,
+      isSliderChanging: false
+    })
+    // 把当前播放时间传给 store 记录
+    playerStore.setState('currentTime', currentTime)
+    // 如果在播放，跳转，未在播放，依旧暂停
+    if (this.data.isPlaying) {
+      // 转到想要播放的时间 转化成秒
+      audioContext.seek(currentTime / 1000)
+    }
+  },
+```
+
+#### 切换歌曲后清空上次歌曲数据防止继续显示
+```diff
+    /**
+     * 根据歌曲id播放音乐
+     * @param {*} ctx 上下文
+     * @param {*} id 歌曲id
+     */
+    playMusicWithSongIdAction(ctx, {
+      id
+    }) {
+      // 如果播放的是上次的歌
+      if (ctx.id == id) {
+        // 每次点进来就直接开始播放
+        this.dispatch('changeMusicPlayStatusAction')
+        return
+      }
+      ctx.id = id
+      // 修改播放状态
+      ctx.isPlaying = true
+
++      // 0、清空之前的数据
++      ctx.currentSong = {}
++      ctx.durationTime = 0
++      ctx.lyricInfos = []
++      ctx.currentTime = 0
++      ctx.currentLyricIndex = 0
++      ctx.currentLyricText = ""
+      /**
+       * 请求歌曲信息
+       */
+      getSongDetail(id).then(res => {
+        ctx.currentSong = res.songs[0]
+        ctx.durationTime = res.songs[0].dt
+      })
+      /**
+       * 请求歌词信息
+       */
+      getSongLyric(id).then(res => {
+        const lyricInfos = getParseLyric(res.lrc.lyric)
+        ctx.lyricInfos = lyricInfos
+      })
+
+      // 创建播放器 播放对应歌曲
+      // 停止上一个音乐
+      audioContext.stop()
+      audioContext.src = `https://music.163.com/song/media/outer/url?id=${id}.mp3`
+      // 自动开启播放
+      audioContext.autoplay = true
+
+      // 监听 audioContext 一些事件
+      this.dispatch('setupAudioContextListenerAction')
+    },
+```
+
+#### 切换上一首 / 下一首
+1. store 中添加字段
+```js
+    // 当前播放的歌单
+    playListSongs: [],
+    // 当前播放的歌曲在歌单中的位置
+    playListIndex: 0
+```
+2. 监听点击事件，把数据保存到 store
+`pages\detail-songs\index.js`
+```js
+  /**
+   * 事件监听 - 监听歌曲点击事件获取歌单和index
+   */
+  handleSongItemClick(event) {
+    const index = event.currentTarget.dataset.index
+    console.log(this.data.songsInfo.tracks, index)
+    playerStore.setState('playListSongs', this.data.songsInfo.tracks)
+    playerStore.setState('playListIndex', index)
+  }
+```
+`pages\home-music\index.js`
+```js
+  /**
+   * 事件监听 - 监听歌曲点击事件获取歌单和index
+   */
+  handleSongItemClick(event) {
+    const index = event.currentTarget.dataset.index
+    console.log(this.data.recommendSongs, index)
+    playerStore.setState('playListSongs', this.data.recommendSongs)
+    playerStore.setState('playListIndex', index)
+  }
+```
+
+3. 点击事件
+```js
+
+  /**
+   * 事件监听 - 切换上一首
+   */
+  handlePrevBtnClick() {
+    playerStore.dispatch('changeNewMusicAction', false)
+  },
+
+  /**
+   * 事件监听 - 播放下一首
+   */
+  handleNextBtnClick() {
+    playerStore.dispatch('changeNewMusicAction')
+  }
+```
+
+4. store 中逻辑封装
+```js
+    /**
+     * 切换上一首 / 下一首歌曲
+     */
+    changeNewMusicAction(ctx, isNext = true) {
+      // 获取当前索引
+      let currentIndex = ctx.playListIndex
+      // 根据不同模式，获取下一首歌索引
+      switch (ctx.playModeIndex) {
+        case 0:
+          // 顺序播放
+          currentIndex = isNext ? currentIndex + 1 : currentIndex - 1
+          // 如果是最后一首，播放第一首
+          if (currentIndex === ctx.playListSongs.length) currentIndex = 0
+          // 如果是第一首，播放最后一首
+          if (currentIndex === -1) currentIndex = ctx.playListSongs.length - 1
+          break
+        case 1:
+          // 单曲循环 直接退出 还是播放这首歌
+          // index = index
+          break
+        case 2:
+          // 随机播放
+          // Math.random() 后面有()
+          const index = Math.floor(Math.random() * ctx.playListSongs.length)
+          // 如果是同一首歌 继续切换下一首
+          if (index === currentIndex) {
+            this.dispatch('changeNewMusicAction', isNext)
+            return
+          }
+          currentIndex = index
+          // 记录新的索引
+          ctx.playListIndex = currentIndex
+          break
+      }
+
+      // 获取歌曲
+      let currentSong = ctx.playListSongs[currentIndex]
+      // 如果没有值 播放同一曲
+      if (!currentSong) {
+        currentSong = ctx.currentSong
+      } else {
+        // 记录新的索引
+        ctx.playListIndex = currentIndex
+      }
+
+      // 播放新的歌曲
+      this.dispatch('playMusicWithSongIdAction', {
+        id: currentSong.id,
+        isRefresh: true
+      })
+    }
+```
+
+5. 如果单曲循环，点击上一首 / 下一首重新开始播放
+```diff
+    /**
+     * 根据歌曲id播放音乐
+     * @param {*} ctx 上下文
+     * @param {*} id 歌曲id 
++     * @param {*} isRefresh 是否需要刷新 默认不需要
+     */
+    playMusicWithSongIdAction(ctx, {
+      id,
++      isRefresh = false
+    }) {
+      // 如果播放的是上次的歌
+      // 如果不需要刷新，继续播放
++      if (ctx.id == id && !isRefresh) {
+        // 每次点进来就直接开始播放
+        this.dispatch('changeMusicPlayStatusAction')
+        return
+      }
+      ctx.id = id
+      // 修改播放状态
+      ctx.isPlaying = true
+
+      // 0、清空之前的数据
+      ctx.currentSong = {}
+      ctx.durationTime = 0
+      ctx.lyricInfos = []
+      ctx.currentTime = 0
+      ctx.currentLyricIndex = 0
+      ctx.currentLyricText = ""
+      /**
+       * 请求歌曲信息
+       */
+      getSongDetail(id).then(res => {
+        ctx.currentSong = res.songs[0]
+        ctx.durationTime = res.songs[0].dt
+      })
+      /**
+       * 请求歌词信息
+       */
+      getSongLyric(id).then(res => {
+        const lyricInfos = getParseLyric(res.lrc.lyric)
+        ctx.lyricInfos = lyricInfos
+      })
+
+      // 创建播放器 播放对应歌曲
+      // 停止上一个音乐
+      audioContext.stop()
+      audioContext.src = `https://music.163.com/song/media/outer/url?id=${id}.mp3`
+      // 自动开启播放
+      audioContext.autoplay = true
+
+      // 监听 audioContext 一些事件
+      this.dispatch('setupAudioContextListenerAction')
+    },
+```
+
+#### 监听歌曲 自动播放下一首
+
+1. 用的是同一个 `audioContext` 不用每次都开始监听
+```diff
+    /**
+     * 根据歌曲id播放音乐
+     * @param {*} ctx 上下文
+     * @param {*} id 歌曲id 
+     * @param {*} isRefresh 是否需要刷新 默认不需要
+     */
+    playMusicWithSongIdAction(ctx, {
+      id,
+      isRefresh = false
+    }) {
+      // 如果播放的是上次的歌
+      // 如果不需要刷新，继续播放
+      if (ctx.id == id && !isRefresh) {
+        // 每次点进来就直接开始播放
+        this.dispatch('changeMusicPlayStatusAction')
+        return
+      }
+      ctx.id = id
+      // 修改播放状态
+      ctx.isPlaying = true
+
+      // 0、清空之前的数据
+      ctx.currentSong = {}
+      ctx.durationTime = 0
+      ctx.lyricInfos = []
+      ctx.currentTime = 0
+      ctx.currentLyricIndex = 0
+      ctx.currentLyricText = ""
+      /**
+       * 请求歌曲信息
+       */
+      getSongDetail(id).then(res => {
+        ctx.currentSong = res.songs[0]
+        ctx.durationTime = res.songs[0].dt
+      })
+      /**
+       * 请求歌词信息
+       */
+      getSongLyric(id).then(res => {
+        const lyricInfos = getParseLyric(res.lrc.lyric)
+        ctx.lyricInfos = lyricInfos
+      })
+
+      // 创建播放器 播放对应歌曲
+      // 停止上一个音乐
+      audioContext.stop()
+      audioContext.src = `https://music.163.com/song/media/outer/url?id=${id}.mp3`
+      // 自动开启播放
+      audioContext.autoplay = true
+
+      // 监听 audioContext 一些事件
++      // 用的是同一个 audioContext 不用每次都开始监听
++      // 第一次播放添加监听
++      if (ctx.isFirstPlay) {
+        this.dispatch('setupAudioContextListenerAction')
++        ctx.isFirstPlay = false
++      }
+    },
+```
+
+2. 自动播放下一首
+```diff
+    /**
+     * 监听播放器时间变化
+     * @param {*} ctx 上下文
+     */
+    setupAudioContextListenerAction(ctx) {
+      // 可以开始播放
+      audioContext.onCanplay(() => {
+        // 想要跳转播放需要 play() 方法 这个方法也可以自动播放
+        audioContext.play()
+      })
+      // 监听事件改变
+      audioContext.onTimeUpdate(() => {
+        // 当前播放时间
+        const currentTime = audioContext.currentTime * 1000
+        // 根据当前时间修改 currentTime
+        ctx.currentTime = currentTime
+
+        // 根据当前时间查找对应歌词
+        // 每次都是从 0 开始匹配 保证无论前进还是后退都能匹配上
+        if (!ctx.lyricInfos.length) return
+        let i = 0
+        for (; i < ctx.lyricInfos.length; i++) {
+          // 拿到每句歌词
+          const lyricInfo = ctx.lyricInfos[i]
+          if (currentTime < lyricInfo.time) {
+            // 找到了之后不需要再找 break 跳出循环
+            break
+          }
+        }
+
+        // 设置当前歌词和索引
+        // 找到正确的需要显示的歌词的 index
+        const currentLyricIndex = i - 1
+        // 如果当前 index 和 歌词的 index 不相同 设置 currentLyricText
+        if (ctx.currentLyricIndex !== currentLyricIndex) {
+          // 找到对应歌词
+          const currentLyricText = ctx.lyricInfos[currentLyricIndex].text
+          ctx.currentLyricText = currentLyricText
+          ctx.currentLyricIndex = currentLyricIndex
+        }
+      })
+
++      // 监听播放完成，自动播放下一首歌曲。
++      audioContext.onEnded(() => {
++        this.dispatch("changeNewMusicAction")
++      })
+    },
+```
+
+### 首页播放栏
+
+1. UI设计
+`pages\home-music\index.wxml`
+```html
+<!-- 播放工具栏 -->
+<view class="play-bar-placeholder" wx:if="{{currentSong.id}}"></view>
+<view class="play-bar" wx:if="{{currentSong.id}}" bindtap="handlePlayBarClick">
+  <view class="left">
+    <!-- animation-play-state 动画状态 -->
+    <image class="album ablum-anim" style="animation-play-state: {{playAnimState}};" mode="aspectFill" src="{{currentSong.al.picUrl}}"></image>
+    <view class="name">{{currentSong. name}}</view>
+  </view>
+  <view class="right">
+    <image class="icon icon-play" src="/assets/images/music/{{isPlaying ? 'pause' : 'play'}}_icon.png" catchtap="handlePlayBtnClick"></image>
+    <image class="icon icon-list" src="/assets/images/music/playlist_icon.png"></image>
+  </view>
+</view>
+```
+`pages\home-music\index.wxss`
+```css
+
+.play-bar-placeholder {
+  height: 44px;
+}
+
+/* 播放工具栏 */
+.play-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 44px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 0 20rpx;
+
+  background-color: #fafafa;
+  box-shadow: 0 -1px 5px rgba(0, 0, 0, .3);
+}
+
+.play-bar .left,
+.play-bar .right {
+  display: flex;
+  align-items: center;
+}
+
+.play-bar .left .album {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+
+  position: relative;
+  top: -8px;
+}
+
+.play-bar .left .name {
+  margin-left: 16px;
+  font-size: 30rpx;
+  color: #333;
+}
+
+.play-bar .right .icon {
+  width: 30px;
+  height: 30px;
+}
+
+.play-bar .right .icon-play {
+  width: 25px;
+  height: 25px;
+  margin-right: 16rpx;
+}
+
+/* album 动画 */
+@keyframes ablumRotate {
+  from {
+    transform: rotate(0deg)
+  }
+
+  to {
+    transform: rotate(360deg)
+  }
+}
+
+.ablum-anim {
+  /* 线性、 无线循环 */
+  animation: ablumRotate 16s linear infinite;
+}
+```
+
+2. 设置播放停止
+- 添加 data
+```js
+    // 正在播放的歌曲
+    currentSong: {},
+    // 是否正在播放
+    isPlaying: false,
+    // 动画状态
+    playAnimState: "paused"
+```
+
+- 从 store 读取数据
+```js
+  /**
+   * 事件处理 - 从 store 获取共享的数据
+   */
+  setupPlayerStoreListener() {
+    // 1. 排行榜监听
+    // store 中取出热门歌单数据
+    rankingStore.onState('hotRankings', (res) => {
+      if (!res.tracks) return
+      this.setData({
+        recommendSongs: res.tracks.slice(0, 6)
+      })
+    })
+    // store 中取出巅峰榜数据
+    rankingStore.onState("newRankings", this.getHandleRankingsData(0));
+    rankingStore.onState("originRankings", this.getHandleRankingsData(2));
+    rankingStore.onState("upRankings", this.getHandleRankingsData(3));
+
+    // 2. 播放器监听 'currentSong', 'isPlaying'
+    playerStore.onStates(['currentSong', 'isPlaying'], ({
+      currentSong,
+      isPlaying
+    }) => {
+      if (currentSong) this.setData({
+        currentSong
+      })
+      if (isPlaying !== undefined) this.setData({
+        isPlaying,
+        playAnimState: isPlaying ? 'running' : 'paused'
+      })
+    })
+  },
+```
+
+- 监听播放暂停事件
+```js
+  /**
+   * 事件处理 - 点击控制播放暂停
+   */
+  handlePlayBtnClick() {
+    playerStore.dispatch("changeMusicPlayStatusAction", !this.data.isPlaying)
+  },
+```
+
+3. 点击播放栏跳转页面
+
+- 跳转页面
+```js
+  /**
+   * 事件处理 - 点击播放栏跳转到播放页
+   */
+  handlePlayBarClick() {
+    wx.navigateTo({
+      url: `/pages/music-player/index?id=${this.data.currentSong.id}`,
+    })
+  },
+```
+
+- 阻止事件冒泡
+
+> `catchtap` 事件不会冒泡不会向上传递
+
+```html
+    <!-- catchtap 事件不会冒泡不会向上传递 -->
+    <image class="icon icon-play" src="/assets/images/music/{{isPlaying ? 'pause' : 'play'}}_icon.png" catchtap="handlePlayBtnClick"></image>
+```
+
+4. 改善播放栏高度
+
+> 在播放时设定`padding`
+```html
+<view class="play-bar-placeholder" wx:if="{{currentSong.id}}"></view>
+```
+```css
+.play-bar-placeholder {
+  height: 44px;
+}
+```
+
+### 使用背景播放器播放音乐
+
+> api: `wx.getBackgroundAudioManager()`
+
+`app.json`
+```json
+  "requiredBackgroundModes": ["audio"],
+```
+```js
+// const audioContext = wx.createInnerAudioContext()
+// 切换背景播放模式 切出后台也可以播放
+const audioContext = wx.getBackgroundAudioManager()
+```
+```diff
+    /**
+     * 根据歌曲id播放音乐
+     * @param {*} ctx 上下文
+     * @param {*} id 歌曲id 
+     * @param {*} isRefresh 是否需要刷新 默认不需要
+     */
+    playMusicWithSongIdAction(ctx, {
+      id,
+      isRefresh = false
+    }) {
+      // 如果播放的是上次的歌
+      // 如果不需要刷新，继续播放
+      if (ctx.id == id && !isRefresh) {
+        // 每次点进来就直接开始播放
+        this.dispatch('changeMusicPlayStatusAction')
+        return
+      }
+      ctx.id = id
+      // 修改播放状态
+      ctx.isPlaying = true
+
+      // 0、清空之前的数据
+      ctx.currentSong = {}
+      ctx.durationTime = 0
+      ctx.lyricInfos = []
+      ctx.currentTime = 0
+      ctx.currentLyricIndex = 0
+      ctx.currentLyricText = ""
+      /**
+       * 请求歌曲信息
+       */
+      getSongDetail(id).then(res => {
+        ctx.currentSong = res.songs[0]
+        ctx.durationTime = res.songs[0].dt
++        audioContext.title = res.songs[0].name
+      })
+      /**
+       * 请求歌词信息
+       */
+      getSongLyric(id).then(res => {
+        const lyricInfos = getParseLyric(res.lrc.lyric)
+        ctx.lyricInfos = lyricInfos
+      })
+      // 创建播放器 播放对应歌曲
+      // 停止上一个音乐
+      audioContext.stop()
+      audioContext.src = `https://music.163.com/song/media/outer/url?id=${id}.mp3`
+      // 自动开启播放
++      // 切换后台播放 wx.getBackgroundAudioManager() 需要有 title 
++      audioContext.title = id
+      audioContext.autoplay = true
+
+      // 监听 audioContext 一些事件
+      // 用的是同一个 audioContext 不用每次都开始监听
+      // 第一次播放添加监听
+      if (ctx.isFirstPlay) {
+        this.dispatch('setupAudioContextListenerAction')
+        ctx.isFirstPlay = false
+      }
+    },
+```
+
+#### 使用背景播放器暂停 / 开始状态控制
+```js
+      // 监听音乐 暂停 / 播放
+      // 播放
+      audioContext.onPlay(() => {
+        ctx.isPlaying = true
+      })
+      // 暂停
+      audioContext.onPause(() => {
+        ctx.isPlaying = false
+      })
+```
+
+- 问题：此时会导致跳转播放时间时按钮会先显示暂停后恢复
+- 原因：在改变进度时，暂停音乐，此时为暂停状态 调用 `onPause()` 方法改变了状态按钮，缓存完成后播放时又改回来
+- 解决思路：
+1. 音乐播放器内不做暂停
+`pages\music-player\index.js`
+```diff
+-    // 先暂停音乐
+-    // audioContext.pause()
+```
+2. 在暂停状态下添加标记，如果是从进度栏改变，直接`return`，不改变状态
+- 因为小程序 `onCanplay`有bug，所以删除暂停音乐
+
+#### 控制后台播放停止后，页面状态改变和点击重新开始播放
+
+> 设置播放状态是否停止
+
+- 改变`isStopping`状态
+```js
+      // 停止
+      audioContext.onStop(() => {
+        ctx.isPlaying = false
+        // 设置为停止状态
+        ctx.isStopping = true
+      })
+```
+- 点击播放时重新开始播放，因为已经清空信息，所以需要再加一次
+```js
+      if (ctx.isStopping && ctx.isPlaying) {
+        audioContext.src = `https://music.163.com/song/media/outer/url?id=${ctx.id}.mp3`
+        // 自动开启播放
+        // 切换后台播放 wx.getBackgroundAudioManager() 需要有 title 
+        audioContext.title = ctx.currentSong.name
+        ctx.isStopping = false
+      }
+```
+
+## 用户登录
+### 登陆步骤解析
+1. 小程序端：
+  1. 需要在小程序拿到一个临时 `code`
+    - `wx.login` -> `code`
+  2. 将`code`传递给自己的服务器
+    - `code` -> 服务器
+
+2. 服务器端：
+  1. 拿到小程序发来的 `code`
+  - `code`
+  2. 服务器端 `code` + `appid` + `appsecret`
+  3. 服务器向微信服务器发送网络请求
+  - 携带 `code` + `appid` + `appsecret`
+  - `axios`
+  4. `openid` + `session_key`
+  - `access_token`
+  5. 问题：用户不知道自己登陆成功
+  - `openid` + `session_key` + 其他信息
+  - 生成的东西 => 自己的服务器 `token`
+  6. 将这个 `token` 返回给小程序
+3. 小程序端：
+  1. 获取到服务器返回的 `token`
+  2. 用户进行其他操作
+     - 收藏，喜欢，评论
+     - 将 `token` 发送给自己的服务器
+4. 自己的服务器拿到 `token`
+  - 解析 `token` 得到 `openid\session_key`
+  - 数据库中保存用户的一些操作
+
+### 实现登录
+#### 封装请求
+`service\index.js`
+
+- 添加 `base_url` 再封装一个请求，动态导入 `base_url`
+```diff
+/**
+ * 封装 wx.request({}) 请求
+ */
+// base_url 常量
+const BASE_URL = 'http://123.207.32.32:9001'
++// 登录的 base_URL
++const LOGIN_BASE_URL = "http://123.207.32.32:3000"
+class HidariRequest {
++  // 外界传进来一个 baseUrl
++  constructor(baseURL) {
++    this.baseURL = baseURL
++  }
+  /**
+   * 封装 wx.request({})请求方法
+   * @param {String} url 请求地址
+   * @param {String} method 请求方法
+   * @param {Object} params 请求参数
+   */
+  request(url, method, params) {
+    // 通过 promise 返回拿到结果
+    return new Promise((resolve, reject) => {
+      wx.request({
+-        url: BASE_URL + url,
++        url: this.baseURL + url,
+        method: method,
+        data: params,
+        success: (res) => {
+          resolve(res.data)
+          console.log(res.data)
+        },
+        fail: reject // js 简写形式 相当于
+        /**
+         * fail: (err) => reject(err)
+         */
+      })
+    })
+  }
+
+  /**
+   * 封装 get 请求
+   * @param {String} url 请求地址
+   * @param {String} params 请求参数
+   */
+  get(url, params) {
+    return this.request(url, 'GET', params)
+  }
+
+  /**
+   * 封装 post 请求
+   * @param {String} url 请求地址
+   * @param {String} params 请求参数
+   */
+  post(url, params) {
+    return this.request(url, 'POST', params)
+  }
+}
+
+-const hidariRequest = new HidariRequest()
++const hidariRequest = new HidariRequest(BASE_URL)
+
++const hidariLoginRequest = new HidariRequest(LOGIN_BASE_URL)
+
+export default hidariRequest
++export {
++  hidariLoginRequest
++}
+```
+`service\api_login.js`
+```js
+/**
+ * 封装登录api
+ */
+
+import {
+  hidariLoginRequest
+} from './index'
+
+/**
+ * 获取 code
+ */
+export const getLoginCode = () => {
+  return new Promise((resolve, reject) => {
+    wx.login({
+      timeout: 1000,
+      success: res => {
+        // code
+        const code = res.code
+        console.log(code)
+        resolve(code)
+      },
+      fail: reject
+    })
+  })
+}
+
+/**
+ * code 发送给服务器
+ * @param {String} code 唯一标识（令牌）
+ */
+export const codeToToken = (code) => {
+  // 注意要 return 否则返回的是 undefined
+  return hidariLoginRequest.post('/login', {
+    code
+  })
+}
+```
+2. 设置常量
+`constants\login-const.js`
+```js
+/**
+ * 登陆相关常量
+ */
+export const TOKEN_KEY = "token_key"
+```
+3. 登陆实现
+```js
+  /**
+   * 登录
+   */
+  async loginAction() {
+    // 获取 code
+    const code = await getLoginCode()
+    // code 发送给服务器
+    const {
+      token
+    } = await codeToToken(code)
+    // token 保存在 weapp 的 storage 中
+    wx.setStorageSync(TOKEN_KEY, token)
+  }
+```
+`app.js`
+```diff
+  // 程序启动生命周期
+  onLaunch() {
+    // 设置设备信息
+    const info = wx.getSystemInfoSync()
+    // 获取屏幕宽高
+    this.globalData.screenWidth = info.screenWidth
+    this.globalData.screenHeight = info.screenHeight
+    // 获取状态栏高度
+    this.globalData.statusBarHeight = info.statusBarHeight
+    // 计算高宽比
+    const ratio = info.screenHeight / info.screenWidth
+    this.globalData.deviceRatio = ratio
+
++    // 用户默认进行登录
++    this.loginAction()
+  },
+```
+
+### 判断token和session是否过期
+`app.js`
+```js
+    // 用户默认进行登录
+    const token = wx.getStorageSync(TOKEN_KEY)
+    // token 是否过期
+    const checkRes = await checkToken(token)
+    // 判断 session 是否过期
+    const isSessionExpire = await checkSession()
+    if (!token || checkRes.errorCode || !isSessionExpire) {
+      this.loginAction()
+    }
+```
+`service\api_login.js`
+```js
+/**
+ * 检查 token 是否过期
+ * @param {String} token 服务器返回的 token
+ */
+export const checkToken = (token) => {
+  return hidariLoginRequest.post('/auth', {}, {
+    token
+  })
+}
+
+/**
+ * 判断 session 是否过期
+ * 过期 => false
+ * 未过期 => true
+ */
+export const checkSession = () => {
+  return new Promise((resolve) => {
+    wx.checkSession({
+      success: () => {
+        resolve(true)
+      },
+      fail: () => {
+        resolve(false)
+      }
+    })
+  })
+}
+```
+
+### 封装 header
+
+> 设定isAuth判断是否需要认证，默认为 false，如果是true，需要传token
+> 设置默认 token，为 true 时添加
+
+- 更改`service\index.js`
+```diff
+/**
+ * 封装 wx.request({}) 请求
+ */
++import {
++  TOKEN_KEY
++} from '../constants/login-const'
++const token = wx.getStorageSync(TOKEN_KEY)
+// base_url 常量
+const BASE_URL = 'http://123.207.32.32:9001'
+// 登录的 base_URL
+const LOGIN_BASE_URL = "http://123.207.32.32:3000"
+class HidariRequest {
+  // 外界传进来一个 baseUrl
+-  constructor(baseURL) {
++  constructor(baseURL, authHEADER = {}) {
+    this.baseURL = baseURL
++    this.authHEADER = authHEADER
+  }
+  /**
+   * 封装 wx.request({})请求方法
+   * @param {String} url 请求地址
+   * @param {String} method 请求方法
+   * @param {Object} params 请求参数
+   * @param {*} isAuth 是否需要授权 默认 false
+   * @param {*} header 请求头 默认为空对象
+   */
+-  request(url, method, params, header = {}) {   
++  request(url, method, params, isAuth = false, header = {}) {
++    // 获取最终 header，如果需要授权，把header和传进来的header放到同一个数组中
++    const finalHeader = isAuth ? {
++      ...this.authHEADER,
++      ...header
++    } : header
+    // 通过 promise 返回拿到结果
+    return new Promise((resolve, reject) => {
+      wx.request({
+        url: this.baseURL + url,
+        method: method,
+        data: params,
++        header: finalHeader,
+        success: (res) => {
+          resolve(res.data)
+          console.log(res.data)
+        },
+        fail: reject // js 简写形式 相当于
+        /**
+         * fail: (err) => reject(err)
+         */
+      })
+    })
+  }
+
+  /**
+   * 封装 get 请求
+   * @param {String} url 请求地址
+   * @param {String} params 请求参数
+   * @param {*} isAuth 是否需要授权 默认 false
+   * @param {*} header 请求头 默认为空对象
+   */
+-  get(url, params, header) {
+-    return this.request(url, 'GET', params, header)
++  get(url, params, isAuth = false, header) {
++    return this.request(url, 'GET', params, isAuth, header)
+  }
+
+  /**
+   * 封装 post 请求
+   * @param {String} url 请求地址
+   * @param {String} params 请求参数
+   * @param {*} isAuth 是否需要授权 默认 false
+   * @param {*} header 请求头 默认为空对象
+   */
+-  post(url, params, header) {
+-    return this.request(url, 'POST', params, header)
++  post(url, params, isAuth = false, header) {
++    return this.request(url, 'POST', params, isAuth, header)
+  }
+}
+// 其他request
+const hidariRequest = new HidariRequest(BASE_URL)
+// 登录相关request
+-const hidariLoginRequest = new HidariRequest(LOGIN_BASE_URL)
++const hidariLoginRequest = new HidariRequest(LOGIN_BASE_URL, {
++  token
++})
+
+export default hidariRequest
+export {
+  hidariLoginRequest
+}
+```
+- 改造封装的接口`service\api_login.js`
+```js
+/**
+ * 检查 token 是否过期
+ * @param {String} token 服务器返回的 token => 封装后不需要再传
+ */
+export const checkToken = () => {
+  /**
+   * {} => 参数
+   * true => 需要包含请求头
+   */
+  return hidariLoginRequest.post('/auth', {}, true)
+}
+```
+
+### 获取用户信息
+
+- 新添加页面`pages\home-profile`
+```html
+<!--pages/home-profile/index.wxml-->
+<!-- open-type="getUserInfo" 表示 button 用来获取用户信息 -->
+<button open-type="getUserInfo" bindtap="handleGetUserInfo">获取用户信息</button>
+<!-- open-type="getPhoneNumber" 表示 button 用来获取用户手机号 -->
+<button open-type="getPhoneNumber" bindgetphonenumber="handleGetPhoneNumber">获取用户手机号</button>
+```
+- 添加 navbar
+`app.json`
+```diff
+    "list": [{
+        "pagePath": "pages/home-music/index",
+        "text": "音乐",
+        "iconPath": "assets/images/tabbar/music_normal.png",
+        "selectedIconPath": "assets/images/tabbar/music_active.png"
+      },
+      {
+        "pagePath": "pages/home-video/index",
+        "text": "视频",
+        "iconPath": "assets/images/tabbar/video_normal.png",
+        "selectedIconPath": "assets/images/tabbar/video_active.png"
+      },
++      {
++        "pagePath": "pages/home-profile/index",
++        "text": "我的",
++        "iconPath": "assets/images/tabbar/profile_normal.png",
++        "selectedIconPath": "assets/images/tabbar/profile_active.png"
++      }
+    ]
+```
+- 封装 api
+```js
+/**
+ * 获取用户信息
+ */
+export const getUserInfo = () => {
+  return new Promise((resolve, reject) => {
+    wx.getUserProfile({
+      desc: 'hello hidari!',
+      success: res => {
+        console.log(res)
+        resolve(res)
+      },
+      fail: reject
+    })
+  })
+}
+```
+- 编写逻辑
+`pages\home-profile\index.js`
+```js
+  /**
+   * 获取用户信息
+   */
+  async handleGetUserInfo() {
+    const res = await getUserInfo()
+  }
+```
+
+#### openid 和 unionid
+1. openid => 用户在小程序中多次登录，甚至换手机后也不变，是身份唯一标识
+2. unionid => 作为在微信多个平台进行授权时，相同的 id

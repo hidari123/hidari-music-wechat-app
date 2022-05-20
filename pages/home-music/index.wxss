@@ -76,6 +76,7 @@ page {
   margin-right: 16rpx;
 }
 
+/* album 动画 */
 @keyframes ablumRotate {
   from {
     transform: rotate(0deg)

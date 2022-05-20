@@ -18,7 +18,7 @@
   <area-header title="推荐歌曲" bind:click="handlerMoreClick"></area-header>
   <view class="song-list">
     <block wx:for="{{recommendSongs}}" wx:key="id">
-      <song-item-v1 item="{{item}}"></song-item-v1>
+      <song-item-v1 item="{{item}}" bindtap="handleSongItemClick" data-index="{{index}}"></song-item-v1>
     </block>
   </view>
 </view>
@@ -37,5 +37,20 @@
     <block wx:for="{{rankings}}" wx:key="name">
       <song-ranking-item item="{{item}}" bindtap="handleRankingMoreClick" data-idx="{{index}}"></song-ranking-item>
     </block>
+  </view>
+</view>
+
+<!-- 播放工具栏 -->
+<view class="play-bar-placeholder" wx:if="{{currentSong.id}}"></view>
+<view class="play-bar" wx:if="{{currentSong.id}}" bindtap="handlePlayBarClick">
+  <view class="left">
+    <!-- animation-play-state 动画状态 -->
+    <image class="album ablum-anim" style="animation-play-state: {{playAnimState}};" mode="aspectFill" src="{{currentSong.al.picUrl}}"></image>
+    <view class="name">{{currentSong. name}}</view>
+  </view>
+  <view class="right">
+    <!-- catchtap 事件不会冒泡不会向上传递 -->
+    <image class="icon icon-play" src="/assets/images/music/{{isPlaying ? 'pause' : 'play'}}_icon.png" catchtap="handlePlayBtnClick"></image>
+    <image class="icon icon-list" src="/assets/images/music/playlist_icon.png"></image>
   </view>
 </view>

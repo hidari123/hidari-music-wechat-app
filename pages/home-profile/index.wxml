@@ -1,0 +1,5 @@
+<!--pages/home-profile/index.wxml-->
+<!-- open-type="getUserInfo" 表示 button 用来获取用户信息 -->
+<button open-type="getUserInfo" bindtap="handleGetUserInfo">获取用户信息</button>
+<!-- open-type="getPhoneNumber" 表示 button 用来获取用户手机号 -->
+<button open-type="getPhoneNumber" bindgetphonenumber="handleGetPhoneNumber">获取用户手机号</button>
