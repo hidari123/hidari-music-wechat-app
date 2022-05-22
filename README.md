@@ -4876,6 +4876,8 @@ const audioContext = wx.getBackgroundAudioManager()
         // 自动开启播放
         // 切换后台播放 wx.getBackgroundAudioManager() 需要有 title 
         audioContext.title = ctx.currentSong.name
+        // 再次开始时从关闭位置开始播放
+        audioContext.startTime = ctx.currentTime / 1000
         ctx.isStopping = false
       }
 ```
