@@ -7,6 +7,9 @@ import {
   getMoreVideoDetail,
   getMoreMVURL
 } from '../../service/api_video'
+import {
+  playerStore
+} from '../../store/player-store'
 Page({
 
   /**
@@ -39,6 +42,7 @@ Page({
    * 生命周期函数--监听页面加载
    */
   onLoad(options) {
+    playerStore.dispatch('changeMusicPlayStatusAction', false)
     // 得到传入的 id
     const id = options.id
 

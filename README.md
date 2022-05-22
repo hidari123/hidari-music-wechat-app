@@ -691,9 +691,10 @@ Page({
    * 生命周期函数--监听页面加载
    */
   onLoad(options) {
+    // 打开时暂停歌曲播放
+    playerStore.dispatch('changeMusicPlayStatusAction', false)
     // 得到传入的 id
     const id = options.id
-
     // 获取请求数据
     if (id.length < 20) {
       this.getPageData(id)
