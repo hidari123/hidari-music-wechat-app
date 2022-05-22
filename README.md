@@ -463,6 +463,27 @@ module.exports = {
 ```
 
 ### 点击 item 实现跳转到详情页面
+```js
+/**
+ * 请求相关mv详情
+ * @param {number} id MV的id
+ */
+export const getMoreVideoDetail = (id) => {
+  return hidariRequest.get("/video/detail", {
+    id
+  })
+}
+
+/**
+ * 请求相关MV的播放地址
+ * @param {number} id MV的id 
+ */
+export const getMoreMVURL = (id) => {
+  return hidariRequest.get("/video/url", {
+    id
+  })
+}
+```
 1. 给 `item` 组件绑定点击事件
 ```html
 <view class="video">
@@ -493,25 +514,35 @@ module.exports = {
 ```html
 <!--pages/detail-video/index.wxml-->
 <wxs src="../../utils/format.wxs" module="format"></wxs>
-<video class="video" autoplay danmu-list="{{danmuList}}" src="{{mvURLInfo.url}}" loop></video>
-<view class="detail">
-  <view class="title">{{mvDetail.name}}</view>
-  <view class="author">{{mvDetail.artistName}} -</view>
-  <view class="detail-info">{{format.formatCount(mvDetail.playCount)}}次播放 - {{mvDetail.publishTime}}</view>
-</view>
-<view class="more">推荐视频</view>
-<view wx:for="{{relatedVideos}}" wx:key="vid" class="more-container" bindtap="handleVideoItemClick" data-item="{{item}}">
-  <!-- widthFix => 宽完全显示 -->
-  <view class="video-image">
-    <image src="{{item.coverUrl}}" mode="widthFix" class="image"></image>
-    <view class="info">
-      <view class="count-more">{{format.formatCount(item.playTime)}}</view>
-      <view class="duration">{{format.formatDuration(item.durationms)}}</view>
-    </view>
+<!-- referrer-policy="origin" 告诉服务器请求源 -->
+<video class="video" referrer-policy="origin" autoplay danmu-list="{{danmuList}}" src="{{mvURLInfo.url}}" loop></video>
+<view class="more">
+  <view class="detail">
+    <view class="title" wx:if="{{mvDetail.name}}">{{mvDetail.name}}</view>
+    <view class="title" wx:elif="{{mvDetail.title}}">{{mvDetail.title}}</view>
+    <view class="author" wx:if="{{mvDetail.artistName}}">{{mvDetail.artistName}} -</view>
+    <view class="author" wx:elif="{{mvDetail.nickname}}">{{mvDetail.nickname}} -</view>
+    <view class="detail-info" wx:if="{{mvDetail.playCount}}">{{format.formatCount(mvDetail.playCount)}}次播放 - {{mvDetail.publishTime}}</view>
+    <view class="detail-info" wx:elif="{{mvDetail.playTime}}">{{format.formatCount(mvDetail.playTime)}}次播放 - {{publishTime}}</view>
   </view>
-  <view class="other-detail">
-    <view class="detail-title">{{item.title}}</view>
-    <view class="detail-author">{{item.creator[0].userName}}</view>
+  <!-- 相关视频标题 -->
+  <area-header title="猜你喜欢" showMore="{{false}}"></area-header>
+  <!-- 相关视频 -->
+  <view wx:for="{{relatedVideos}}" wx:key="vid">
+    <!-- widthFix => 宽完全显示 -->
+    <view bindtap="handleVideoItemClick" data-item="{{item}}" class="more-container">
+      <view class="video-image">
+        <image src="{{item.coverUrl}}" mode="widthFix" class="image"></image>
+        <view class="info">
+          <view class="count-more">{{format.formatCount(item.playTime)}}</view>
+          <view class="duration">{{format.formatDuration(item.durationms)}}</view>
+        </view>
+      </view>
+      <view class="other-detail">
+        <view class="detail-title">{{item.title}}</view>
+        <view class="detail-author">{{item.creator[0].userName}}</view>
+      </view>
+    </view>
   </view>
 </view>
 ```
@@ -619,6 +650,20 @@ page {
 
 4. 请求数据
 ```js
+// pages/detail-video/index.js
+
+import {
+  getMVURL,
+  getMVDetail,
+  getRelatedVideo,
+  getMoreVideoDetail,
+  getMoreMVURL
+} from '../../service/api_video'
+Page({
+
+  /**
+   * 页面的初始数据
+   */
   data: {
     // 请求播放地址信息
     mvURLInfo: {},
@@ -637,7 +682,9 @@ page {
         color: '#00ff00',
         time: 3
       }
-    ]
+    ],
+    // 发布时间
+    publishTime: ''
   },
 
   /**
@@ -648,7 +695,12 @@ page {
     const id = options.id
 
     // 获取请求数据
-    this.getPageData(id)
+    if (id.length < 20) {
+      this.getPageData(id)
+    } else {
+      this.getMoreData(id)
+    }
+
   },
 
   /**
@@ -679,6 +731,47 @@ page {
       })
     })
   },
+
+  /**
+   * 请求更多视频信息
+   * @param {*} event 
+   */
+  getMoreData(vid) {
+    // 请求更多视频详情
+    getMoreVideoDetail(vid).then(res => {
+      this.setData({
+        mvDetail: res.data,
+        // /(?<=\u0020).*/ => 匹配空格后的字符，替换为空格（删除）
+        publishTime: new Date(parseInt(res.data.publishTime)).toLocaleString().replace(/(?<=\u0020).*/, ' ')
+      })
+    })
+    // 请求更多视频播放地址
+    getMoreMVURL(vid).then(res => {
+      this.setData({
+        mvURLInfo: res.urls[0]
+      })
+    })
+    // 请求相关视频
+    getRelatedVideo(vid).then(res => {
+      this.setData({
+        relatedVideos: res.data
+      })
+    })
+  },
+
+  /**
+   * 封装事件处理的方法
+   * 监听item点击事件
+   */
+  handleVideoItemClick(event) {
+    // 得到点击的 item.id
+    const vid = event.currentTarget.dataset.item.vid
+    // 页面跳转
+    wx.navigateTo({
+      url: `/pages/detail-video/index?id=${vid}`,
+    })
+  }
+})
 ```
 
 ## 首页
@@ -3925,6 +4018,29 @@ handleItemClick() {
     url: `/pages/music-player/index?id=${id}`,
   })
 }
+```
+- 搜索页面`pages\detail-search\index.wxml`
+```html
+<!-- 搜索结果 -->
+<view class="result" wx:elif="{{resultSongs.length}}">
+  <view class="title">最佳匹配</view>
+  <view class="list">
+    <block wx:for="{{resultSongs}}" wx:key="id">
+      <!-- index 自增 -->
+      <song-item-v2 item="{{item}}" index="{{index + 1}}" bindtap="handleSongItemClick" data-index="{{index}}"></song-item-v2>
+    </block>
+  </view>
+</view>
+```
+```js
+  /**
+   * 事件监听 - 监听歌曲点击事件获取歌单和index
+   */
+  handleSongItemClick(event) {
+    const index = event.currentTarget.dataset.index
+    playerStore.setState('playListSongs', this.data.resultSongs)
+    playerStore.setState('playListIndex', index)
+  }
 ```
 3. 保存数据
 ```js

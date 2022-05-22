@@ -7,6 +7,9 @@ const {
 import debounce from '../../utils/debounce'
 // 导入高亮显示搜索关键字方法
 import stringToNodes from '../../utils/string2Nodes'
+import {
+  playerStore
+} from '../../store/player-store'
 // 返回经过防抖处理的函数
 const debounceGetSearchSuggest = debounce(getSearchSuggest)
 // pages/detail-search/index.js
@@ -117,5 +120,14 @@ Page({
 
     // 发送网络请求
     this.handleSearchAction()
+  },
+
+  /**
+   * 事件监听 - 监听歌曲点击事件获取歌单和index
+   */
+  handleSongItemClick(event) {
+    const index = event.currentTarget.dataset.index
+    playerStore.setState('playListSongs', this.data.resultSongs)
+    playerStore.setState('playListIndex', index)
   }
 })

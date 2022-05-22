@@ -4,25 +4,30 @@
 <video class="video" referrer-policy="origin" autoplay danmu-list="{{danmuList}}" src="{{mvURLInfo.url}}" loop></video>
 <view class="more">
   <view class="detail">
-    <view class="title">{{mvDetail.name}}</view>
-    <view class="author">{{mvDetail.artistName}} -</view>
-    <view class="detail-info">{{format.formatCount(mvDetail.playCount)}}次播放 - {{mvDetail.publishTime}}</view>
+    <view class="title" wx:if="{{mvDetail.name}}">{{mvDetail.name}}</view>
+    <view class="title" wx:elif="{{mvDetail.title}}">{{mvDetail.title}}</view>
+    <view class="author" wx:if="{{mvDetail.artistName}}">{{mvDetail.artistName}} -</view>
+    <view class="author" wx:elif="{{mvDetail.nickname}}">{{mvDetail.nickname}} -</view>
+    <view class="detail-info" wx:if="{{mvDetail.playCount}}">{{format.formatCount(mvDetail.playCount)}}次播放 - {{mvDetail.publishTime}}</view>
+    <view class="detail-info" wx:elif="{{mvDetail.playTime}}">{{format.formatCount(mvDetail.playTime)}}次播放 - {{publishTime}}</view>
   </view>
   <!-- 相关视频标题 -->
   <area-header title="猜你喜欢" showMore="{{false}}"></area-header>
   <!-- 相关视频 -->
-  <view wx:for="{{relatedVideos}}" wx:key="vid" class="more-container" bindtap="handleVideoItemClick" data-item="{{item}}">
+  <view wx:for="{{relatedVideos}}" wx:key="vid">
     <!-- widthFix => 宽完全显示 -->
-    <view class="video-image">
-      <image src="{{item.coverUrl}}" mode="widthFix" class="image"></image>
-      <view class="info">
-        <view class="count-more">{{format.formatCount(item.playTime)}}</view>
-        <view class="duration">{{format.formatDuration(item.durationms)}}</view>
+    <view bindtap="handleVideoItemClick" data-item="{{item}}" class="more-container">
+      <view class="video-image">
+        <image src="{{item.coverUrl}}" mode="widthFix" class="image"></image>
+        <view class="info">
+          <view class="count-more">{{format.formatCount(item.playTime)}}</view>
+          <view class="duration">{{format.formatDuration(item.durationms)}}</view>
+        </view>
       </view>
-    </view>
-    <view class="other-detail">
-      <view class="detail-title">{{item.title}}</view>
-      <view class="detail-author">{{item.creator[0].userName}}</view>
+      <view class="other-detail">
+        <view class="detail-title">{{item.title}}</view>
+        <view class="detail-author">{{item.creator[0].userName}}</view>
+      </view>
     </view>
   </view>
 </view>

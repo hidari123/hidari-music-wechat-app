@@ -3,7 +3,9 @@
 import {
   getMVURL,
   getMVDetail,
-  getRelatedVideo
+  getRelatedVideo,
+  getMoreVideoDetail,
+  getMoreMVURL
 } from '../../service/api_video'
 Page({
 
@@ -28,7 +30,9 @@ Page({
         color: '#00ff00',
         time: 3
       }
-    ]
+    ],
+    // 发布时间
+    publishTime: ''
   },
 
   /**
@@ -39,7 +43,12 @@ Page({
     const id = options.id
 
     // 获取请求数据
-    this.getPageData(id)
+    if (id.length < 20) {
+      this.getPageData(id)
+    } else {
+      this.getMoreData(id)
+    }
+
   },
 
   /**
@@ -72,65 +81,42 @@ Page({
   },
 
   /**
+   * 请求更多视频信息
+   * @param {*} event 
+   */
+  getMoreData(vid) {
+    // 请求更多视频详情
+    getMoreVideoDetail(vid).then(res => {
+      this.setData({
+        mvDetail: res.data,
+        // /(?<=\u0020).*/ => 匹配空格后的字符，替换为空格（删除）
+        publishTime: new Date(parseInt(res.data.publishTime)).toLocaleString().replace(/(?<=\u0020).*/, ' ')
+      })
+    })
+    // 请求更多视频播放地址
+    getMoreMVURL(vid).then(res => {
+      this.setData({
+        mvURLInfo: res.urls[0]
+      })
+    })
+    // 请求相关视频
+    getRelatedVideo(vid).then(res => {
+      this.setData({
+        relatedVideos: res.data
+      })
+    })
+  },
+
+  /**
    * 封装事件处理的方法
    * 监听item点击事件
    */
   handleVideoItemClick(event) {
     // 得到点击的 item.id
     const vid = event.currentTarget.dataset.item.vid
-    console.log(vid);
     // 页面跳转
     wx.navigateTo({
       url: `/pages/detail-video/index?id=${vid}`,
     })
-  },
-
-  /**
-   * 生命周期函数--监听页面初次渲染完成
-   */
-  onReady() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面显示
-   */
-  onShow() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面隐藏
-   */
-  onHide() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面卸载
-   */
-  onUnload() {
-
-  },
-
-  /**
-   * 页面相关事件处理函数--监听用户下拉动作
-   */
-  onPullDownRefresh() {
-
-  },
-
-  /**
-   * 页面上拉触底事件的处理函数
-   */
-  onReachBottom() {
-
-  },
-
-  /**
-   * 用户点击右上角分享
-   */
-  onShareAppMessage() {
-
   }
 })

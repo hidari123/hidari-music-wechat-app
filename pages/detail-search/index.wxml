@@ -32,7 +32,7 @@
   <view class="list">
     <block wx:for="{{resultSongs}}" wx:key="id">
       <!-- index 自增 -->
-      <song-item-v2 item="{{item}}" index="{{index + 1}}"></song-item-v2>
+      <song-item-v2 item="{{item}}" index="{{index + 1}}" bindtap="handleSongItemClick" data-index="{{index}}"></song-item-v2>
     </block>
   </view>
 </view>

@@ -37,6 +37,26 @@ export const getMVDetail = (mvid) => {
 }
 
 /**
+ * 请求相关mv详情
+ * @param {number} id MV的id
+ */
+export const getMoreVideoDetail = (id) => {
+  return hidariRequest.get("/video/detail", {
+    id
+  })
+}
+
+/**
+ * 请求相关MV的播放地址
+ * @param {number} id MV的id 
+ */
+export const getMoreMVURL = (id) => {
+  return hidariRequest.get("/video/url", {
+    id
+  })
+}
+
+/**
  * 查询所有相关的视频
  * @param {number} id MV的id
  */
