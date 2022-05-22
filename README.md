@@ -63,6 +63,7 @@
     - [封装 header](#%E5%B0%81%E8%A3%85-header)
     - [获取用户信息](#%E8%8E%B7%E5%8F%96%E7%94%A8%E6%88%B7%E4%BF%A1%E6%81%AF)
       - [openid 和 unionid](#openid-%E5%92%8C-unionid)
+      - [获取用户手机号](#%E8%8E%B7%E5%8F%96%E7%94%A8%E6%88%B7%E6%89%8B%E6%9C%BA%E5%8F%B7)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -5285,5 +5286,24 @@ export const getUserInfo = () => {
 ```
 
 #### openid 和 unionid
-1. openid => 用户在小程序中多次登录，甚至换手机后也不变，是身份唯一标识
-2. unionid => 作为在微信多个平台进行授权时，相同的 id
+1. `openid` => 用户在小程序中多次登录，甚至换手机后也不变，是身份唯一标识
+2. `unionid` => 作为在微信多个平台进行授权时，相同的 id
+
+#### 获取用户手机号
+1. 为什么要获取用户手机号 => 用户身份多平台共享
+  - 只有企业可以获取
+
+2. `pages\home-profile\index.js`
+```js
+  /**
+   * 获取手机号码
+   */
+  async handleGetPhoneNumber(event) {
+    console.log(event)
+    // getPhoneNumber:fail no permission
+  }
+```
+```html
+<!-- open-type="getPhoneNumber" 表示 button 用来获取用户手机号 -->
+<button open-type="getPhoneNumber" bindgetphonenumber="handleGetPhoneNumber" style="position: fixed; bottom: 0; right: 0;">获取用户手机号</button>
+```

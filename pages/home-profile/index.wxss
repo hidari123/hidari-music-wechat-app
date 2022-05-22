@@ -1,1 +1,89 @@
 /* pages/home-profile/index.wxss */
+
+.profile {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+}
+
+.profile .avatar {
+  width: 150rpx;
+  text-align: center;
+  line-height: 80px;
+  border-radius: 50%;
+  position: absolute;
+  top: 280rpx;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  z-index: 9;
+}
+
+@keyframes opac {
+  from {
+    opacity: 1;
+    width: 0;
+    height: 0;
+    top: 50%;
+    left: 50%;
+  }
+
+  to {
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+  }
+}
+
+.animate-wave {
+  width: 500rpx;
+  height: 500rpx;
+  position: absolute;
+  top: 100rpx;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+}
+
+.animate-wave .w2 {
+  background: rgb(165, 248, 172);
+  position: absolute;
+  border-radius: 50%;
+  animation: opac 6s infinite;
+  animation-delay: 1s;
+}
+
+.animate-wave .w3 {
+  background: rgb(230, 247, 159);
+  position: absolute;
+  border-radius: 50%;
+  animation: opac 6s infinite;
+  animation-delay: 2s;
+}
+
+.animate-wave .w4 {
+  background: rgb(154, 233, 247);
+  position: absolute;
+  border-radius: 50%;
+  animation: opac 6s infinite;
+  animation-delay: 3s;
+}
+
+.animate-wave .w5 {
+  background: #fcc;
+  position: absolute;
+  border-radius: 50%;
+  animation: opac 6s infinite;
+  animation-delay: 4s;
+}
+
+.animate-wave .w6 {
+  background: rgb(252, 214, 157);
+  position: absolute;
+  border-radius: 50%;
+  animation: opac 6s infinite;
+  animation-delay: 5s;
+}
